@@ -419,12 +419,9 @@ function Menu({ onPick }: { onPick: (i: number) => void }) {
 
 /* -------------------------------------------------------------- sections */
 
-function Head({ n, label, title }: { n: string; label: string; title: string }) {
+function Head({ title }: { title: string }) {
   return (
     <Reveal className="head">
-      <p className="label">
-        ({n}) — {label}
-      </p>
       <h2 className="h2">{title}</h2>
     </Reveal>
   )
@@ -440,7 +437,6 @@ function About() {
   return (
     <section id="about" className="section">
       <div className="wrap">
-        <p className="label">(01) — Liner notes</p>
         <WordReveal
           className="statement"
           text="I'm Ayush. I build distributed systems in Go, and the products that sit on top of them."
@@ -464,7 +460,7 @@ function Work({ onPick }: { onPick: (i: number) => void }) {
   return (
     <section id="work" className="section">
       <div className="wrap">
-        <Head n="02" label="Tracklist" title="Selected work" />
+        <Head title="Selected work" />
         <ol
           className="tracklist"
           onMouseMove={(e) => {
@@ -534,7 +530,7 @@ function Stack() {
   return (
     <section id="stack" className="section">
       <div className="wrap">
-        <Head n="03" label="Instruments" title="The stack" />
+        <Head title="The stack" />
       </div>
       <div className="lanes">
         {stack.map((row, r) => (
@@ -567,7 +563,7 @@ function Journey() {
   return (
     <section id="journey" className="section">
       <div className="wrap">
-        <Head n="04" label="Journey" title="So far" />
+        <Head title="Journey" />
         <ol className="journey">
           {timeline.map((t, i) => (
             <Reveal as="li" key={t.title} delay={i * 110}>
@@ -590,7 +586,6 @@ function Contact() {
   return (
     <section id="contact" className="section contact">
       <div className="wrap">
-        <p className="label">(05) — Contact</p>
         <a className="talk" href={`mailto:${profile.email}`}>
           <span className="talk-line">Let's</span>
           <span className="talk-line talk-out">talk</span>

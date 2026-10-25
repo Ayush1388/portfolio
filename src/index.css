@@ -154,13 +154,13 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 /* ------------------------------------------------------------ sections */
 .section { padding: 9rem 0; position: relative; }
 .head { margin-bottom: 3.5rem; }
-.h2 { margin-top: 1rem; font-family: var(--display); font-stretch: 125%; font-variation-settings: 'wdth' 125; font-weight: 900; text-transform: uppercase; font-size: clamp(2.6rem, 7.5vw, 7rem); line-height: 0.88; letter-spacing: -0.01em; }
+.h2 { font-family: var(--display); font-stretch: 125%; font-variation-settings: 'wdth' 125; font-weight: 900; text-transform: uppercase; font-size: clamp(2.6rem, 7.5vw, 7rem); line-height: 0.88; letter-spacing: -0.01em; }
 
 .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.9s var(--ease) var(--d, 0ms), transform 0.9s var(--ease) var(--d, 0ms); }
 .reveal.is-in { opacity: 1; transform: none; }
 
 /* About */
-.statement { margin-top: 1.8rem; max-width: 22ch; font-family: var(--display); font-stretch: 112%; font-variation-settings: 'wdth' 112; font-weight: 800; font-size: clamp(2.1rem, 5.2vw, 4.8rem); line-height: 1; letter-spacing: -0.015em; text-transform: uppercase; }
+.statement { max-width: 22ch; font-family: var(--display); font-stretch: 112%; font-variation-settings: 'wdth' 112; font-weight: 800; font-size: clamp(2.1rem, 5.2vw, 4.8rem); line-height: 1; letter-spacing: -0.015em; text-transform: uppercase; }
 .words .word { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.06em; margin-right: 0.24em; }
 .words .word > span { display: inline-block; transform: translateY(110%); transition: transform 0.9s var(--ease); transition-delay: calc(var(--i) * 45ms); }
 .words.is-in .word > span { transform: none; }
@@ -217,7 +217,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 
 /* Contact */
 .contact { padding-bottom: 3rem; }
-.talk { position: relative; display: block; margin-top: 1.5rem; font-family: var(--display); font-stretch: 125%; font-variation-settings: 'wdth' 125; font-weight: 900; text-transform: uppercase; font-size: clamp(4rem, 16vw, 15.5rem); line-height: 0.84; letter-spacing: -0.02em; }
+.talk { position: relative; display: block; font-family: var(--display); font-stretch: 125%; font-variation-settings: 'wdth' 125; font-weight: 900; text-transform: uppercase; font-size: clamp(4rem, 16vw, 15.5rem); line-height: 0.84; letter-spacing: -0.02em; }
 .talk-line { display: block; transition: transform 0.7s var(--ease), color 0.4s; }
 .talk-out { color: transparent; -webkit-text-stroke: 2px var(--ink); padding-left: 0.6em; }
 .talk:hover .talk-line:first-child { transform: translateX(0.15em); }
