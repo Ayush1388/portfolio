@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { CSSProperties, ElementType, ReactNode } from 'react'
 import {
+  ArrowDown,
   ArrowUpRight,
   Database,
   Github,
   Linkedin,
   Mail,
   Network,
-  Pause,
   Play,
   SkipBack,
   SkipForward,
@@ -59,21 +59,6 @@ const toTrack = (p: Project): Track => ({
 
 const tracks: Track[] = [intro, ...projects.map(toTrack)]
 const pad = (n: number) => String(n).padStart(2, '0')
-const TRACK_MS = 8000
-
-function usePrefersReducedMotion() {
-  const [reduced, setReduced] = useState(
-    () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches,
-  )
-  useEffect(() => {
-    const mq = matchMedia('(prefers-reduced-motion: reduce)')
-    const on = () => setReduced(mq.matches)
-    mq.addEventListener('change', on)
-    return () => mq.removeEventListener('change', on)
-  }, [])
-  return reduced
-}
-
 /* --------------------------------------------------------------- reveal */
 
 function useInView<T extends HTMLElement>(threshold = 0.2) {
@@ -169,29 +154,66 @@ function Cover({ t, index }: { t: Track; index: number }) {
 
 /* ---------------------------------------------------------------- player */
 
-function Player({ index, setIndex }: { index: number; setIndex: (fn: (i: number) => number) => void }) {
-  const reduced = usePrefersReducedMotion()
-  const [hold, setHold] = useState(false)
-  const [userPaused, setUserPaused] = useState(false)
+/** Scroll distance (in viewport heights) that each track owns while the player is pinned. */
+const TRACK_VH = 0.5
+
+/** Scroll the page to the middle of a track's slice of the pinned player. */
+function scrollToTrack(i: number) {
+  const wrap = document.getElementById('home')
+  if (!wrap) return
+  const per = (wrap.offsetHeight - window.innerHeight) / tracks.length
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches
+  window.scrollTo({ top: wrap.offsetTop + per * (i + 0.5), behavior: reduced ? 'auto' : 'smooth' })
+}
+
+function Player({ index, setIndex }: { index: number; setIndex: (i: number) => void }) {
+  const wrapRef = useRef<HTMLElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
   const [dir, setDir] = useState(1)
-  const touchX = useRef<number | null>(null)
+  const last = useRef(index)
   const n = tracks.length
   const t = tracks[index]
   const prev = tracks[(index - 1 + n) % n]
   const next = tracks[(index + 1) % n]
-  const playing = !reduced && !userPaused && !hold
 
-  const go = useCallback(
-    (step: number) => {
-      setDir(step)
-      setIndex((i) => (i + step + n) % n)
-    },
-    [n, setIndex],
-  )
+  // Scroll position inside the pinned section picks the track; native scrolling stays untouched.
+  useEffect(() => {
+    let raf = 0
+    const update = () => {
+      raf = 0
+      const wrap = wrapRef.current
+      if (!wrap) return
+      const span = wrap.offsetHeight - window.innerHeight
+      const p = Math.min(1, Math.max(0, (window.scrollY - wrap.offsetTop) / span))
+      stageRef.current?.style.setProperty('--p', String(p))
+      const i = Math.min(n - 1, Math.floor(p * n))
+      if (i !== last.current) {
+        setDir(i > last.current ? 1 : -1)
+        last.current = i
+        setIndex(i)
+      }
+    }
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(update)
+    }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      cancelAnimationFrame(raf)
+    }
+  }, [n, setIndex])
+
+  const go = useCallback((step: number) => scrollToTrack(Math.min(n - 1, Math.max(0, last.current + step))), [n])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || window.scrollY > window.innerHeight * 0.6) return
+      const wrap = wrapRef.current
+      if (!wrap || e.target instanceof HTMLInputElement) return
+      const inPlayer = window.scrollY >= wrap.offsetTop - 10 && window.scrollY <= wrap.offsetTop + wrap.offsetHeight - window.innerHeight
+      if (!inPlayer) return
       if (e.key === 'ArrowRight') go(1)
       if (e.key === 'ArrowLeft') go(-1)
     }
@@ -199,103 +221,92 @@ function Player({ index, setIndex }: { index: number; setIndex: (fn: (i: number)
     return () => window.removeEventListener('keydown', onKey)
   }, [go])
 
-  // Pause the timer while the tab is hidden.
-  useEffect(() => {
-    const onVis = () => setHold(document.hidden)
-    document.addEventListener('visibilitychange', onVis)
-    return () => document.removeEventListener('visibilitychange', onVis)
-  }, [])
-
   const seg = 100 / n
 
   return (
     <section
       id="home"
-      className={`stage ${dir > 0 ? 'fwd' : 'back'}`}
+      ref={wrapRef}
+      className="player"
+      style={{ '--tracks': n, '--track-vh': TRACK_VH } as CSSProperties}
       aria-roledescription="carousel"
-      aria-label="Projects player"
-      onMouseEnter={() => setHold(true)}
-      onMouseLeave={() => setHold(false)}
-      onTouchStart={(e) => (touchX.current = e.touches[0].clientX)}
-      onTouchEnd={(e) => {
-        if (touchX.current === null) return
-        const dx = e.changedTouches[0].clientX - touchX.current
-        if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1)
-        touchX.current = null
-      }}
+      aria-label="Projects player. Scroll to change project."
     >
-      <span className="ghost ghost-l" key={`gl-${prev.key}`} aria-hidden>{prev.short}</span>
-      <span className="ghost ghost-r" key={`gr-${next.key}`} aria-hidden>{next.short}</span>
+      <div ref={stageRef} className={`stage ${dir > 0 ? 'fwd' : 'back'}`}>
+        {index > 0 && <span className="ghost ghost-l" key={`gl-${prev.key}`} aria-hidden>{prev.short}</span>}
+        {index < n - 1 && <span className="ghost ghost-r" key={`gr-${next.key}`} aria-hidden>{next.short}</span>}
 
-      <div className="deck" key={t.key} aria-live="polite">
-        <Cover t={t} index={index + 1} />
-        <h1 className="track-title" style={{ '--len': t.short.length } as CSSProperties} aria-label={t.short}>
-          {t.short.split('').map((c, i) => (
-            <span key={i} aria-hidden style={{ '--i': i } as CSSProperties}>{c}</span>
-          ))}
-        </h1>
-        <div className="track-meta">
-          <p className="kicker">{t.kicker}</p>
-          <p className="sub">{t.sub}</p>
-          <p className="blurb">{t.blurb}</p>
-          <div className="track-links">
-            {t.links.map((l) => (
-              <a key={l.label} href={l.href} {...(l.href.startsWith('http') ? { target: '_blank', rel: 'noreferrer' } : {})}>
-                {l.label} <ArrowUpRight size={14} aria-hidden />
-              </a>
+        <div className="deck" key={t.key} aria-live="polite">
+          <Cover t={t} index={index + 1} />
+          <h1 className="track-title" style={{ '--len': t.short.length } as CSSProperties} aria-label={t.short}>
+            {t.short.split('').map((c, i) => (
+              <span key={i} aria-hidden style={{ '--i': i } as CSSProperties}>{c}</span>
             ))}
+          </h1>
+          <div className="track-meta">
+            <p className="kicker">{t.kicker}</p>
+            <p className="sub">{t.sub}</p>
+            <p className="blurb">{t.blurb}</p>
+            <div className="track-links">
+              {t.links.map((l) => (
+                <a key={l.label} href={l.href} {...(l.href.startsWith('http') ? { target: '_blank', rel: 'noreferrer' } : {})}>
+                  {l.label} <ArrowUpRight size={14} aria-hidden />
+                </a>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      <Badge text="NEXT ✦ SEE THE NEXT PROJECT ✦ " className="next-badge">
-        <button className="badge-btn" onClick={() => go(1)} aria-label={`Next: ${next.short}`}>
-          <SkipForward size={18} />
-        </button>
-        <svg viewBox="0 0 120 120" className="ring" aria-hidden>
-          <circle
-            key={t.key}
-            cx="60"
-            cy="60"
-            r="34"
-            pathLength={100}
-            className="ring-fill"
-            style={{ '--dur': `${TRACK_MS}ms`, animationPlayState: playing ? 'running' : 'paused' } as CSSProperties}
-            onAnimationEnd={() => go(1)}
-          />
-        </svg>
-      </Badge>
+        <Badge text={index < n - 1 ? 'NEXT ✦ SCROLL FOR THE NEXT PROJECT ✦ ' : 'THAT’S ALL ✦ KEEP SCROLLING ✦ '} className="next-badge">
+          <button
+            className="badge-btn"
+            onClick={() => (index < n - 1 ? go(1) : document.getElementById('about')?.scrollIntoView())}
+            aria-label={index < n - 1 ? `Next: ${next.short}` : 'Continue to About'}
+          >
+            {index < n - 1 ? <SkipForward size={18} /> : <ArrowDown size={18} />}
+          </button>
+          <svg viewBox="0 0 120 120" className="ring" aria-hidden>
+            <circle cx="60" cy="60" r="34" pathLength={100} className="ring-fill" />
+          </svg>
+        </Badge>
 
-      <div className="console">
-        <svg className="arc" viewBox="0 0 400 60" preserveAspectRatio="none" aria-hidden>
-          <path d="M10,58 Q200,-40 390,58" pathLength={100} className="arc-track" />
-          <path
-            d="M10,58 Q200,-40 390,58"
-            pathLength={100}
-            className="arc-seg"
-            style={{ strokeDasharray: `${seg} ${100 - seg}`, strokeDashoffset: -index * seg }}
-          />
-        </svg>
-        <p className="mini-title" aria-hidden>
-          <span>{pad(index + 1)}</span> {t.short}
-        </p>
-        <div className="console-row">
-          <button onClick={() => go(-1)} aria-label={`Previous: ${prev.short}`}>
-            <SkipBack size={16} />
-          </button>
-          <button className="menu-btn" onClick={() => document.dispatchEvent(new Event('open-menu'))}>
-            Menu
-          </button>
-          <button onClick={() => setUserPaused((p) => !p)} aria-label={userPaused ? 'Resume autoplay' : 'Pause autoplay'} className="pp-btn">
-            {userPaused || reduced ? <Play size={14} /> : <Pause size={14} />}
-          </button>
-          <button onClick={() => go(1)} aria-label={`Next: ${next.short}`}>
-            <SkipForward size={16} />
-          </button>
+        {index === 0 && (
+          <p className="scroll-hint" aria-hidden>
+            <span className="scroll-hint-line" /> Scroll to play
+          </p>
+        )}
+        <a href="#about" className="skip-player">
+          Skip to about <ArrowDown size={13} aria-hidden />
+        </a>
+
+        <div className="console">
+          <svg className="arc" viewBox="0 0 400 60" preserveAspectRatio="none" aria-hidden>
+            <path d="M10,58 Q200,-40 390,58" pathLength={100} className="arc-track" />
+            <path
+              d="M10,58 Q200,-40 390,58"
+              pathLength={100}
+              className="arc-seg"
+              style={{ strokeDasharray: `${seg} ${100 - seg}`, strokeDashoffset: -index * seg }}
+            />
+          </svg>
+          <p className="mini-title" aria-hidden>
+            <span>{pad(index + 1)}</span> {t.short}
+          </p>
+          <div className="console-row">
+            <button onClick={() => go(-1)} disabled={index === 0} aria-label={`Previous: ${prev.short}`}>
+              <SkipBack size={16} />
+            </button>
+            <button className="menu-btn" onClick={() => document.dispatchEvent(new Event('open-menu'))}>
+              Menu
+            </button>
+            <button onClick={() => go(1)} disabled={index === n - 1} aria-label={`Next: ${next.short}`}>
+              <SkipForward size={16} />
+            </button>
+          </div>
+          <span className="counter" aria-hidden>
+            {pad(index + 1)} / {pad(n)}
+          </span>
         </div>
-        <span className="counter" aria-hidden>
-          {pad(index + 1)} / {pad(n)}
-        </span>
       </div>
     </section>
   )
@@ -351,9 +362,8 @@ function Menu({ onPick }: { onPick: (i: number) => void }) {
               <button
                 tabIndex={open ? 0 : -1}
                 onClick={() => {
-                  onPick(i)
                   setOpen(false)
-                  document.getElementById('home')?.scrollIntoView()
+                  setTimeout(() => onPick(i), 80)
                 }}
               >
                 <span>{pad(i + 1)}</span> {t.key === 'intro' ? 'Intro' : t.key}
@@ -436,10 +446,7 @@ function Work({ onPick }: { onPick: (i: number) => void }) {
                   className="row"
                   onMouseEnter={() => setHover(i + 1)}
                   onFocus={() => setHover(i + 1)}
-                  onClick={() => {
-                    onPick(i + 1)
-                    document.getElementById('home')?.scrollIntoView()
-                  }}
+                  onClick={() => onPick(i + 1)}
                   aria-label={`Play ${p.title} in the player`}
                 >
                   <span className="row-n">{pad(i + 2)}</span>
@@ -594,7 +601,7 @@ function TopBar() {
 
 export default function App() {
   const [index, setIndex] = useState(0)
-  const pick = (i: number) => setIndex(() => i)
+  const pick = scrollToTrack
   return (
     <>
       <a href="#about" className="skip-link">Skip to content</a>

@@ -25,7 +25,7 @@ body {
     radial-gradient(ellipse 70% 60% at 50% 40%, #1a1e25 0%, transparent 70%),
     var(--bg);
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 h1, h2, h3, p, ol, ul, dl, dd { margin: 0; padding: 0; }
 ol, ul { list-style: none; }
@@ -58,7 +58,9 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .top-links a:hover::after { transform: scaleX(1); transform-origin: left; }
 
 /* --------------------------------------------------------------- stage */
-.stage { position: relative; height: 100svh; min-height: 660px; overflow: hidden; display: grid; place-items: center; touch-action: pan-y; }
+/* overflow-anchor: none stops the browser "correcting" scroll when the pinned content swaps, which would loop. */
+.player { position: relative; height: calc(100svh + var(--tracks) * var(--track-vh) * 100svh); overflow-anchor: none; }
+.stage { position: sticky; top: 0; height: 100svh; overflow: hidden; display: grid; place-items: center; }
 .stage::after { content: ''; position: absolute; left: 0; right: 0; top: 58%; height: 1px; background: linear-gradient(90deg, transparent, var(--line) 20%, var(--line) 80%, transparent); pointer-events: none; }
 
 .ghost { position: absolute; top: 50%; font-family: var(--display); font-stretch: 125%; font-variation-settings: 'wdth' 125; font-weight: 900; font-size: 24vw; line-height: 1; text-transform: uppercase; color: transparent; -webkit-text-stroke: 1.5px rgba(241, 237, 230, 0.16); white-space: nowrap; pointer-events: none; user-select: none; transform: translateY(-50%); animation: ghostIn 1s var(--ease) both; }
@@ -106,8 +108,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .badge-btn { position: relative; z-index: 1; display: grid; place-items: center; width: 64px; height: 64px; border-radius: 50%; border: 1px solid var(--line); background: rgba(17, 19, 23, 0.6); transition: transform 0.3s var(--ease), background-color 0.3s, color 0.3s; }
 .badge-btn:hover { transform: scale(1.08); background: var(--accent); color: #111; }
 .ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); pointer-events: none; }
-.ring-fill { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 100; stroke-dashoffset: 100; animation: ringFill var(--dur) linear forwards; }
-@keyframes ringFill { to { stroke-dashoffset: 0; } }
+.ring-fill { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 100; stroke-dashoffset: calc(100 - var(--p, 0) * 100); }
 
 /* Bottom console: arc position indicator + transport */
 .console { position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: min(620px, 86vw); z-index: 6; display: grid; justify-items: center; padding-bottom: 1.2rem; }
@@ -116,7 +117,15 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .arc-seg { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 0.8s var(--ease); }
 .console-row { display: flex; align-items: center; gap: 2.2rem; margin-top: -1.6rem; }
 .console-row button { display: grid; place-items: center; min-width: 44px; min-height: 44px; color: var(--ink); opacity: 0.8; transition: opacity 0.2s, color 0.2s; }
-.console-row button:hover { opacity: 1; color: var(--accent); }
+.console-row button:hover:not(:disabled) { opacity: 1; color: var(--accent); }
+.console-row button:disabled { opacity: 0.25; cursor: default; }
+
+.scroll-hint { position: absolute; left: 2.4rem; bottom: 4rem; display: flex; align-items: center; gap: 0.8rem; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); animation: metaIn 0.8s 0.8s var(--ease) both; }
+.scroll-hint-line { position: relative; width: 1px; height: 2.6rem; background: var(--line); overflow: hidden; }
+.scroll-hint-line::after { content: ''; position: absolute; left: 0; top: 0; width: 1px; height: 40%; background: var(--accent); animation: drip 1.8s var(--ease) infinite; }
+@keyframes drip { from { transform: translateY(-100%); } to { transform: translateY(260%); } }
+.skip-player { position: absolute; left: 2.4rem; bottom: 1.6rem; z-index: 6; display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); min-height: 44px; transition: color 0.2s; }
+.skip-player:hover { color: var(--accent); }
 .menu-btn { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; }
 .counter { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); letter-spacing: 0.1em; }
 .mini-title { display: none; }
@@ -223,7 +232,6 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 @media (max-width: 1024px) {
   .deck { width: min(42vw, 420px); }
   .track-meta { right: auto; left: 0; top: calc(100% + 2.5rem); width: 100%; }
-  .stage { min-height: 820px; }
   .stage::after { display: none; }
   .row { grid-template-columns: 3rem 1fr 9rem 2rem; }
   .row-tags { display: none; }
@@ -237,7 +245,9 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   .top { padding: 1.1rem 1.25rem; }
   .top-links a:not(.top-resume) { display: none; }
 
-  .stage { height: auto; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5.5rem 1.25rem 3rem; }
+  .stage { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4.5rem 1.25rem 5.5rem; }
+  .scroll-hint { display: none; }
+  .skip-player { left: auto; right: 1.25rem; top: 3.4rem; bottom: auto; font-size: 0.64rem; }
   .ghost { font-size: 42vw; top: 30%; -webkit-text-stroke-width: 1px; }
   .ghost-l { right: 86vw; }
   .ghost-r { left: 86vw; }
@@ -249,7 +259,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   .blurb { font-size: 0.85rem; }
 
   /* Swipe or use the mini-player instead of the badge on phones */
-  .next-badge, .console-row .pp-btn { display: none; }
+  .next-badge { display: none; }
 
   /* The console becomes a persistent mini-player */
   .console { position: fixed; left: 0.75rem; right: 0.75rem; bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px)); width: auto; transform: none; display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.4rem 0.35rem 1rem; border-radius: 20px; background: rgba(23, 26, 31, 0.82); border: 1px solid var(--line); backdrop-filter: blur(16px) saturate(1.4); -webkit-backdrop-filter: blur(16px) saturate(1.4); box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.8); }
