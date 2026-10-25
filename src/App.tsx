@@ -1,26 +1,28 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { ElementType, ReactNode } from 'react'
 import {
   ArrowRight,
   ArrowDown,
-  Check,
-  Code2,
-  Compass,
   ExternalLink,
   FileText,
+  GraduationCap,
   Github,
   Linkedin,
   Mail,
+  Menu,
   Moon,
   Sun,
+  X,
 } from 'lucide-react'
 import {
   profile,
   nav,
   projects,
+  categories,
+  stats,
   stack,
+  marquee,
   timeline,
-  developerPoints,
-  explorerPoints,
 } from './data'
 
 type Theme = 'light' | 'dark'
@@ -57,17 +59,121 @@ function useActiveSection(ids: string[]) {
   return active
 }
 
+/** True once the element has scrolled into view (fires once). */
+function useInView<T extends HTMLElement>(threshold = 0.15) {
+  const ref = useRef<T>(null)
+  const [seen, setSeen] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          setSeen(true)
+          io.disconnect()
+        }
+      },
+      { threshold },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [threshold])
+  return [ref, seen] as const
+}
+
+function Reveal({
+  children,
+  delay = 0,
+  as,
+  className = '',
+}: {
+  children: ReactNode
+  delay?: number
+  as?: ElementType
+  className?: string
+}) {
+  const Tag: ElementType = as ?? 'div'
+  const [ref, seen] = useInView<HTMLElement>()
+  return (
+    <Tag
+      ref={ref}
+      className={`reveal ${seen ? 'is-in' : ''} ${className}`}
+      style={{ '--d': `${delay}ms` } as React.CSSProperties}
+    >
+      {children}
+    </Tag>
+  )
+}
+
+function CountUp({ to, suffix = '', plain = false }: { to: number; suffix?: string; plain?: boolean }) {
+  const [ref, seen] = useInView<HTMLSpanElement>(0.5)
+  const [n, setN] = useState(0)
+  useEffect(() => {
+    if (!seen) return
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setN(to)
+      return
+    }
+    const start = performance.now()
+    const dur = 1400
+    let raf = 0
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - start) / dur)
+      setN(Math.round(to * (1 - Math.pow(1 - p, 4))))
+      if (p < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [seen, to])
+  return (
+    <span ref={ref}>
+      {plain ? n : n.toLocaleString()}
+      {suffix}
+    </span>
+  )
+}
+
+/** Cursor-follow spotlight on every .card, via delegated pointer events. */
+function useSpotlight() {
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      const card = (e.target as HTMLElement).closest<HTMLElement>('.card')
+      if (!card) return
+      const r = card.getBoundingClientRect()
+      card.style.setProperty('--mx', `${e.clientX - r.left}px`)
+      card.style.setProperty('--my', `${e.clientY - r.top}px`)
+    }
+    document.addEventListener('pointermove', onMove)
+    return () => document.removeEventListener('pointermove', onMove)
+  }, [])
+}
+
+function ScrollProgress() {
+  const [p, setP] = useState(0)
+  useEffect(() => {
+    const onScroll = () => {
+      const h = document.documentElement
+      setP(h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight))
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  return <div className="progress" style={{ transform: `scaleX(${p})` }} aria-hidden />
+}
+
 const sectionIds = nav.map((n) => n.toLowerCase())
 
 function Navbar({ theme, toggle }: { theme: Theme; toggle: () => void }) {
   const active = useActiveSection(sectionIds)
+  const [open, setOpen] = useState(false)
   return (
     <header className="nav-wrap">
-      <nav className="nav" aria-label="Primary">
+      <nav className={`nav ${open ? 'is-open' : ''}`} aria-label="Primary">
         <a href="#home" className="nav-logo" aria-label="Home">
           {profile.initials}
         </a>
-        <ul className="nav-links">
+        <ul className="nav-links" onClick={() => setOpen(false)}>
           {nav.map((n) => (
             <li key={n}>
               <a
@@ -90,22 +196,28 @@ function Navbar({ theme, toggle }: { theme: Theme; toggle: () => void }) {
         <a href={profile.resume} className="btn btn-ink btn-sm nav-resume">
           Resume <ArrowRight size={14} />
         </a>
+        <button
+          className="icon-btn nav-burger"
+          onClick={() => setOpen((o) => !o)}
+          aria-label={open ? 'Close menu' : 'Open menu'}
+          aria-expanded={open}
+        >
+          {open ? <X size={16} /> : <Menu size={16} />}
+        </button>
       </nav>
     </header>
   )
 }
 
-function SectionHead({ label, title, children }: { label: string; title: string; children?: React.ReactNode }) {
+function SectionHead({ label, title, children }: { label: string; title: string; children?: ReactNode }) {
   return (
-    <div className="section-head">
+    <Reveal className="section-head">
       <div>
-        <p className="label">
-          <span aria-hidden>//</span> {label}
-        </p>
+        <p className="label">{label}</p>
         <h2 className="display">{title}</h2>
       </div>
       {children}
-    </div>
+    </Reveal>
   )
 }
 
@@ -113,17 +225,17 @@ function Hero() {
   return (
     <section id="home" className="hero">
       <div className="hero-left">
+        <span className="orb orb-a" aria-hidden />
+        <span className="orb orb-b" aria-hidden />
+        <div className="hero-grid" aria-hidden />
         <div className="hero-inner">
-          <p className="label label-on-dark">
-            <span aria-hidden>//</span> {profile.role}
-          </p>
+          <p className="label label-on-dark">{profile.role}</p>
           <h1 className="hero-title">
             Building reliable systems with <span className="accent">Go.</span>
           </h1>
           <p className="hero-sub">
-            I'm Ayush Pandey, a final year B.Tech student who enjoys building scalable backend
-            systems, exploring distributed architectures, and turning complex ideas into useful
-            products.
+            I'm Ayush Pandey, a B.Tech student who enjoys building scalable backend systems,
+            exploring distributed architectures, and turning complex ideas into useful products.
           </p>
           <div className="hero-cta">
             <a href="#projects" className="btn btn-light">
@@ -138,19 +250,58 @@ function Hero() {
           </div>
         </div>
         <a href="#about" className="scroll-cue label label-on-dark">
-          <ArrowDown size={16} /> Scroll down
+          <ArrowDown size={16} className="bob" /> Scroll down
         </a>
       </div>
-      <div className="hero-right" aria-hidden>
-        <ul className="hero-words label">
-          <li>Ideas</li>
-          <li>Systems</li>
-          <li>Code</li>
-          <li>Impact</li>
-        </ul>
-        <span className="hero-dash" />
+
+      <div className="hero-right">
+        <div className="hero-right-glow" aria-hidden />
+        <div className="about-card card">
+          <div className="about-card-top">
+            <span className="avatar" aria-hidden>{profile.initials}</span>
+            <div>
+              <p className="label">About me</p>
+              <p className="about-name">{profile.name}</p>
+            </div>
+          </div>
+          <h2 className="display about-h">
+            Hi, I build things <em>that scale.</em>
+          </h2>
+          <p className="muted about-p">
+            B.Tech Computer Science student at {profile.university}. I've been shipping projects since
+            my second year — backend systems in Go, full-stack apps, and a bit of Web3 and ML.
+          </p>
+          <p className="edu">
+            <GraduationCap size={16} /> B.Tech CS · 2024 – 2028
+          </p>
+          <p className="now">
+            <span className="pulse" aria-hidden />
+            <span>
+              Currently building <strong>AuctionEngine</strong>, a distributed live auction platform in Go.
+            </span>
+          </p>
+        </div>
+        <span className="float-chip fc-1" aria-hidden>Go</span>
+        <span className="float-chip fc-2" aria-hidden>Redis</span>
+        <span className="float-chip fc-3" aria-hidden>Kafka</span>
+        <span className="float-chip fc-4" aria-hidden>PostgreSQL</span>
       </div>
     </section>
+  )
+}
+
+function Marquee() {
+  const items = [...marquee, ...marquee]
+  return (
+    <div className="marquee" aria-hidden>
+      <ul className="marquee-track">
+        {items.map((m, i) => (
+          <li key={i}>
+            <span className="marquee-dot" /> {m}
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 
@@ -158,48 +309,24 @@ function About() {
   return (
     <section id="about" className="section">
       <div className="wrap">
-        <div className="about-top">
-          <div>
-            <p className="label">
-              <span aria-hidden>//</span> About me
-            </p>
-            <h2 className="display display-xl">About me</h2>
-          </div>
-          <p className="lede">
-            I'm a final year B.Tech student passionate about backend systems and distributed
-            architecture. I enjoy writing clean, maintainable code and building products that solve
-            real problems. Currently, I'm working on AuctionEngine, a distributed live auction and
-            bidding platform built in Go.
+        <SectionHead label="About me" title="Backend first, curious about everything." />
+        <Reveal delay={80}>
+          <p className="statement">
+            I started building in my second year and haven't stopped since. I like Go for the
+            simplicity, distributed systems for the hard problems, and shipping things people can
+            actually use. From live auctions and log pipelines to wallets and ML models, I learn
+            by building.
           </p>
-        </div>
-
-        <div className="about-grid">
-          <article className="card">
-            <span className="chip-icon"><Code2 size={20} /></span>
-            <h3 className="display card-title">Developer</h3>
-            <p className="muted">Focused on building reliable, scalable and efficient systems.</p>
-            <ul className="checks">
-              {developerPoints.map((p) => (
-                <li key={p}><Check size={14} /> {p}</li>
-              ))}
-            </ul>
-          </article>
-          <article className="card">
-            <span className="chip-icon"><Compass size={20} /></span>
-            <h3 className="display card-title">Explorer</h3>
-            <p className="muted">Always learning and building.</p>
-            <ul className="checks">
-              {explorerPoints.map((p) => (
-                <li key={p}><Check size={14} /> {p}</li>
-              ))}
-            </ul>
-          </article>
-          <div className="orbit" aria-hidden>
-            <span className="orbit-dot" />
-            <p className="label">
-              Curiosity<br />drives<br />better<br />systems
-            </p>
-          </div>
+        </Reveal>
+        <div className="stat-grid">
+          {stats.map((s, i) => (
+            <Reveal key={s.label} delay={120 + i * 90} className="card stat">
+              <p className="stat-num display">
+                <CountUp to={s.value} suffix={s.suffix} plain={s.plain} />
+              </p>
+              <p className="muted">{s.label}</p>
+            </Reveal>
+          ))}
         </div>
       </div>
     </section>
@@ -207,44 +334,72 @@ function About() {
 }
 
 function Projects() {
-  const [featured, ...rest] = projects
+  const [cat, setCat] = useState<(typeof categories)[number]>('All')
+  const shown = projects.filter((p) => cat === 'All' || p.category === cat)
   return (
     <section id="projects" className="section">
       <div className="wrap">
         <SectionHead label="My work" title="My Projects">
           <a href={profile.github} className="btn btn-outline btn-sm" target="_blank" rel="noreferrer">
-            View all <ArrowRight size={14} />
+            All on GitHub <ArrowRight size={14} />
           </a>
         </SectionHead>
 
-        <div className="proj-grid">
-          <article className="card proj proj-featured">
-            <p className="featured-tag"><span className="dot" /> Featured project</p>
-            <h3 className="display card-title">{featured.title}</h3>
-            <p className="muted">{featured.blurb}</p>
-            <ul className="tags">
-              {featured.tags.map((t) => <li key={t}>{t}</li>)}
-            </ul>
-            <div className="proj-actions">
-              <a href={featured.github} className="btn btn-ink btn-sm" target="_blank" rel="noreferrer">
-                <Github size={14} /> View on GitHub
-              </a>
-            </div>
-          </article>
+        <Reveal delay={60}>
+          <div className="filters" role="tablist" aria-label="Filter projects">
+            {categories.map((c) => (
+              <button
+                key={c}
+                role="tab"
+                aria-selected={cat === c}
+                className={`filter ${cat === c ? 'is-on' : ''}`}
+                onClick={() => setCat(c)}
+              >
+                {c}
+                <span className="filter-n">
+                  {c === 'All' ? projects.length : projects.filter((p) => p.category === c).length}
+                </span>
+              </button>
+            ))}
+          </div>
+        </Reveal>
 
-          {rest.map((p) => (
-            <article key={p.title} className="card proj">
-              <a href={p.github} className="proj-ext" target="_blank" rel="noreferrer" aria-label={`${p.title} on GitHub`}>
-                <ExternalLink size={16} />
-              </a>
+        <div className="proj-grid" key={cat}>
+          {shown.map((p, i) => (
+            <article
+              key={p.title}
+              className={`card proj pop ${p.featured && cat === 'All' ? 'proj-featured' : ''}`}
+              style={{ '--d': `${i * 55}ms` } as React.CSSProperties}
+            >
+              <div className="proj-top">
+                {p.featured ? (
+                  <p className="featured-tag"><span className="dot" /> Featured project</p>
+                ) : (
+                  <p className="featured-tag">{p.category}</p>
+                )}
+                <a
+                  href={p.demo ?? p.repo}
+                  className="proj-ext"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`${p.title} ${p.demo ? 'live demo' : 'on GitHub'}`}
+                >
+                  <ExternalLink size={16} />
+                </a>
+              </div>
               <h3 className="display card-title">{p.title}</h3>
               <p className="muted">{p.blurb}</p>
               <ul className="tags">
                 {p.tags.map((t) => <li key={t}>{t}</li>)}
               </ul>
               <div className="proj-actions">
-                <a href={p.github} className="btn btn-outline btn-sm" target="_blank" rel="noreferrer">
-                  <Github size={14} /> View on GitHub <ArrowRight size={14} />
+                {p.demo && (
+                  <a href={p.demo} className="btn btn-ink btn-sm" target="_blank" rel="noreferrer">
+                    Live demo <ArrowRight size={14} />
+                  </a>
+                )}
+                <a href={p.repo} className="btn btn-outline btn-sm" target="_blank" rel="noreferrer">
+                  <Github size={14} /> View on GitHub
                 </a>
               </div>
             </article>
@@ -263,8 +418,8 @@ function Skills() {
           <p className="muted side-note">Technologies I use to build, deploy and monitor scalable systems.</p>
         </SectionHead>
         <div className="stack">
-          {stack.map((row) => (
-            <div key={row.group} className="stack-row">
+          {stack.map((row, r) => (
+            <Reveal key={row.group} delay={r * 70} className="stack-row">
               <span className="stack-group">{row.group}</span>
               <ul className="stack-items">
                 {row.items.map((i) => (
@@ -276,7 +431,7 @@ function Skills() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -290,15 +445,16 @@ function Experience() {
       <div className="wrap">
         <SectionHead label="Experience" title="Experience & Education" />
         <ol className="timeline">
-          {timeline.map((t) => (
-            <li key={t.title}>
+          {timeline.map((t, i) => (
+            <Reveal as="li" key={t.title} delay={i * 120}>
               <span className="tl-dot" aria-hidden />
               <div className="tl-head">
                 <h3>{t.title}</h3>
-                <p className="muted">{t.when}</p>
+                <p className="tl-place">{t.place}</p>
+                <p className="muted tl-when">{t.when}</p>
               </div>
               <p className="muted tl-text">{t.text}</p>
-            </li>
+            </Reveal>
           ))}
         </ol>
       </div>
@@ -309,12 +465,11 @@ function Experience() {
 function Contact() {
   return (
     <section id="contact" className="contact">
+      <span className="orb orb-c" aria-hidden />
       <div className="wrap">
-        <p className="label label-on-dark">
-          <span aria-hidden>//</span> Get in touch
-        </p>
+        <p className="label label-on-dark">Get in touch</p>
         <div className="contact-grid">
-          <div>
+          <Reveal>
             <h2 className="contact-title">Let's build something great.</h2>
             <p className="contact-sub">
               I'm always open to discussing new projects, collaborations or internship
@@ -323,8 +478,8 @@ function Contact() {
             <a href={`mailto:${profile.email}`} className="btn btn-light">
               Send a message <ArrowRight size={16} />
             </a>
-          </div>
-          <ul className="contact-links">
+          </Reveal>
+          <Reveal as="ul" delay={120} className="contact-links">
             <li>
               <a href={profile.github} target="_blank" rel="noreferrer">
                 <Github size={18} /> {profile.githubLabel}
@@ -340,7 +495,7 @@ function Contact() {
                 <Mail size={18} /> {profile.email}
               </a>
             </li>
-          </ul>
+          </Reveal>
         </div>
         <footer className="footer">
           <p>© 2026 {profile.name}. Built with React and a lot of coffee.</p>
@@ -357,12 +512,15 @@ function Contact() {
 
 export default function App() {
   const [theme, toggle] = useTheme()
+  useSpotlight()
   return (
     <>
       <a href="#about" className="skip-link">Skip to content</a>
+      <ScrollProgress />
       <Navbar theme={theme} toggle={toggle} />
       <main>
         <Hero />
+        <Marquee />
         <About />
         <Projects />
         <Skills />
