@@ -6,23 +6,24 @@ import {
   ExternalLink,
   FileText,
   GraduationCap,
+  House,
+  LayoutGrid,
+  Layers,
+  Route,
   Github,
   Linkedin,
   Database,
   Mail,
-  Menu,
   Network,
   Webhook,
   Moon,
   Sun,
-  X,
 } from 'lucide-react'
 import {
   profile,
   nav,
   projects,
   categories,
-  stats,
   stack,
   marquee,
   timeline,
@@ -109,34 +110,6 @@ function Reveal({
   )
 }
 
-function CountUp({ to, suffix = '', plain = false }: { to: number; suffix?: string; plain?: boolean }) {
-  const [ref, seen] = useInView<HTMLSpanElement>(0.5)
-  const [n, setN] = useState(0)
-  useEffect(() => {
-    if (!seen) return
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setN(to)
-      return
-    }
-    const start = performance.now()
-    const dur = 1400
-    let raf = 0
-    const tick = (t: number) => {
-      const p = Math.min(1, (t - start) / dur)
-      setN(Math.round(to * (1 - Math.pow(1 - p, 4))))
-      if (p < 1) raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [seen, to])
-  return (
-    <span ref={ref}>
-      {plain ? n : n.toLocaleString()}
-      {suffix}
-    </span>
-  )
-}
-
 /** Cursor-follow spotlight on every .card, via delegated pointer events. */
 function useSpotlight() {
   useEffect(() => {
@@ -170,14 +143,13 @@ const sectionIds = nav.map((n) => n.toLowerCase())
 
 function Navbar({ theme, toggle }: { theme: Theme; toggle: () => void }) {
   const active = useActiveSection(sectionIds)
-  const [open, setOpen] = useState(false)
   return (
     <header className="nav-wrap">
-      <nav className={`nav ${open ? 'is-open' : ''}`} aria-label="Primary">
+      <nav className="nav" aria-label="Primary">
         <a href="#home" className="nav-logo" aria-label="Home">
           {profile.initials}
         </a>
-        <ul className="nav-links" onClick={() => setOpen(false)}>
+        <ul className="nav-links">
           {nav.map((n) => (
             <li key={n}>
               <a
@@ -200,16 +172,31 @@ function Navbar({ theme, toggle }: { theme: Theme; toggle: () => void }) {
         <a href={profile.resume} className="btn btn-ink btn-sm nav-resume">
           Resume <ArrowRight size={14} />
         </a>
-        <button
-          className="icon-btn nav-burger"
-          onClick={() => setOpen((o) => !o)}
-          aria-label={open ? 'Close menu' : 'Open menu'}
-          aria-expanded={open}
-        >
-          {open ? <X size={16} /> : <Menu size={16} />}
-        </button>
       </nav>
     </header>
+  )
+}
+
+const dockItems = [
+  { id: 'home', label: 'Home', Icon: House },
+  { id: 'projects', label: 'Work', Icon: LayoutGrid },
+  { id: 'skills', label: 'Stack', Icon: Layers },
+  { id: 'experience', label: 'Journey', Icon: Route },
+  { id: 'contact', label: 'Contact', Icon: Mail },
+]
+
+/** Phone-only navigation: an app-style bottom dock instead of a squeezed desktop navbar. */
+function MobileDock() {
+  const active = useActiveSection(sectionIds)
+  return (
+    <nav className="dock" aria-label="Sections">
+      {dockItems.map(({ id, label, Icon }) => (
+        <a key={id} href={`#${id}`} className={active === id ? 'is-active' : ''} aria-current={active === id ? 'true' : undefined}>
+          <Icon size={20} aria-hidden />
+          <span>{label}</span>
+        </a>
+      ))}
+    </nav>
   )
 }
 
@@ -307,25 +294,6 @@ function Marquee() {
         ))}
       </ul>
     </div>
-  )
-}
-
-function Stats() {
-  return (
-    <section className="section stats-section" aria-label="At a glance">
-      <div className="wrap">
-        <div className="stat-grid">
-          {stats.map((s, i) => (
-            <Reveal key={s.label} delay={i * 90} className="card stat">
-              <p className="stat-num display">
-                <CountUp to={s.value} suffix={s.suffix} plain={s.plain} />
-              </p>
-              <p className="muted">{s.label}</p>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    </section>
   )
 }
 
@@ -540,10 +508,10 @@ export default function App() {
       <a href="#projects" className="skip-link">Skip to content</a>
       <ScrollProgress />
       <Navbar theme={theme} toggle={toggle} />
+      <MobileDock />
       <main>
         <Hero />
         <Marquee />
-        <Stats />
         <Projects />
         <Skills />
         <Experience />

@@ -100,13 +100,6 @@ export const projects: Project[] = [
 
 export const categories: ('All' | Category)[] = ['All', 'Backend', 'Full-stack', 'Web3', 'ML']
 
-export const stats = [
-  { value: 12, suffix: '+', label: 'Projects built' },
-  { value: 5, suffix: '', label: 'Live deployments' },
-  { value: 2, suffix: '+', label: 'Years building' },
-  { value: 2028, suffix: '', label: 'Graduating', plain: true },
-]
-
 export type Tech = { name: string; icon?: SimpleIcon; img?: string; lucide?: 'db' | 'api' | 'design'; hot?: boolean }
 
 export const stack: { group: string; items: Tech[] }[] = [
