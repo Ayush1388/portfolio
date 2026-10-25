@@ -13,9 +13,9 @@ export const profile = {
   university: 'SRM Institute of Science and Technology, Delhi NCR Campus',
   github: 'https://github.com/Ayush1388',
   githubLabel: 'github.com/Ayush1388',
-  linkedin: 'https://linkedin.com/in/ayush-pandey',
-  linkedinLabel: 'linkedin.com/in/ayush-pandey',
-  email: 'ayushpandey.dev@gmail.com',
+  linkedin: 'https://www.linkedin.com/in/ayush-pandey-662a4037b/',
+  linkedinLabel: 'linkedin.com/in/ayush-pandey-662a4037b',
+  email: 'ayushcan1388@gmail.com',
   resume: '/resume.pdf',
 }
 

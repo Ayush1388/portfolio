@@ -154,6 +154,19 @@ function Cover({ t, index }: { t: Track; index: number }) {
 
 /* ---------------------------------------------------------------- player */
 
+const PHONE = '(max-width: 720px)'
+
+function useMedia(query: string) {
+  const [match, setMatch] = useState(() => matchMedia(query).matches)
+  useEffect(() => {
+    const mq = matchMedia(query)
+    const on = () => setMatch(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [query])
+  return match
+}
+
 /** Scroll distance (in viewport heights) that each track owns while the player is pinned. */
 const TRACK_VH = 0.5
 
@@ -169,44 +182,51 @@ function scrollToTrack(i: number) {
 function Player({ index, setIndex }: { index: number; setIndex: (i: number) => void }) {
   const wrapRef = useRef<HTMLElement>(null)
   const stageRef = useRef<HTMLDivElement>(null)
-  const [dir, setDir] = useState(1)
+  const isPhone = useMedia(PHONE)
+  const touch = useRef<{ x: number; y: number } | null>(null)
+  // Direction of the latest change, so covers slide in from the matching side.
   const last = useRef(index)
+  const dir = useRef(1)
+  if (index !== last.current) {
+    dir.current = index > last.current ? 1 : -1
+    last.current = index
+  }
   const n = tracks.length
   const t = tracks[index]
   const prev = tracks[(index - 1 + n) % n]
   const next = tracks[(index + 1) % n]
 
-  // Scroll position inside the pinned section picks the track; native scrolling stays untouched.
+  // Desktop: scroll position inside the pinned section picks the track; native scrolling stays untouched.
+  // Phones swipe sideways instead, so vertical scrolling simply moves down the page.
   useEffect(() => {
-    let raf = 0
+    if (isPhone) return
+    // Cheap enough to run on every scroll event; no rAF, which Chrome throttles in background windows.
     const update = () => {
-      raf = 0
       const wrap = wrapRef.current
       if (!wrap) return
       const span = wrap.offsetHeight - window.innerHeight
       const p = Math.min(1, Math.max(0, (window.scrollY - wrap.offsetTop) / span))
       stageRef.current?.style.setProperty('--p', String(p))
       const i = Math.min(n - 1, Math.floor(p * n))
-      if (i !== last.current) {
-        setDir(i > last.current ? 1 : -1)
-        last.current = i
-        setIndex(i)
-      }
-    }
-    const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(update)
+      if (i !== last.current) setIndex(i)
     }
     update()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    window.addEventListener('resize', onScroll)
+    window.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
     return () => {
-      window.removeEventListener('scroll', onScroll)
-      window.removeEventListener('resize', onScroll)
-      cancelAnimationFrame(raf)
+      window.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
     }
-  }, [n, setIndex])
+  }, [n, setIndex, isPhone])
 
-  const go = useCallback((step: number) => scrollToTrack(Math.min(n - 1, Math.max(0, last.current + step))), [n])
+  const go = useCallback(
+    (step: number) => {
+      const i = Math.min(n - 1, Math.max(0, last.current + step))
+      if (isPhone) setIndex(i)
+      else scrollToTrack(i)
+    },
+    [n, isPhone, setIndex],
+  )
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -232,7 +252,19 @@ function Player({ index, setIndex }: { index: number; setIndex: (i: number) => v
       aria-roledescription="carousel"
       aria-label="Projects player. Scroll to change project."
     >
-      <div ref={stageRef} className={`stage ${dir > 0 ? 'fwd' : 'back'}`}>
+      <div
+        ref={stageRef}
+        className={`stage ${dir.current > 0 ? 'fwd' : 'back'}`}
+        onTouchStart={(e) => (touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY })}
+        onTouchEnd={(e) => {
+          const start = touch.current
+          touch.current = null
+          if (!isPhone || !start) return
+          const dx = e.changedTouches[0].clientX - start.x
+          const dy = e.changedTouches[0].clientY - start.y
+          if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) go(dx < 0 ? 1 : -1)
+        }}
+      >
         {index > 0 && <span className="ghost ghost-l" key={`gl-${prev.key}`} aria-hidden>{prev.short}</span>}
         {index < n - 1 && <span className="ghost ghost-r" key={`gr-${next.key}`} aria-hidden>{next.short}</span>}
 
@@ -275,6 +307,9 @@ function Player({ index, setIndex }: { index: number; setIndex: (i: number) => v
             <span className="scroll-hint-line" /> Scroll to play
           </p>
         )}
+        <p className="swipe-hint" aria-hidden>
+          <span>←</span> Swipe for projects <span>→</span>
+        </p>
         <a href="#about" className="skip-player">
           Skip to about <ArrowDown size={13} aria-hidden />
         </a>
@@ -601,7 +636,12 @@ function TopBar() {
 
 export default function App() {
   const [index, setIndex] = useState(0)
-  const pick = scrollToTrack
+  const pick = (i: number) => {
+    if (matchMedia(PHONE).matches) {
+      setIndex(i)
+      document.getElementById('home')?.scrollIntoView()
+    } else scrollToTrack(i)
+  }
   return (
     <>
       <a href="#about" className="skip-link">Skip to content</a>

@@ -126,6 +126,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 @keyframes drip { from { transform: translateY(-100%); } to { transform: translateY(260%); } }
 .skip-player { position: absolute; left: 2.4rem; bottom: 1.6rem; z-index: 6; display: inline-flex; align-items: center; gap: 0.4rem; font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); min-height: 44px; transition: color 0.2s; }
 .skip-player:hover { color: var(--accent); }
+.swipe-hint { display: none; }
 .menu-btn { font-size: 0.78rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; }
 .counter { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); letter-spacing: 0.1em; }
 .mini-title { display: none; }
@@ -242,12 +243,17 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 /* ------------------------------------------------- phone: an app, not a squeezed desktop */
 @media (max-width: 720px) {
   body { padding-bottom: 6rem; }
-  .top { padding: 1.1rem 1.25rem; }
+  .top { padding: 1rem 1.25rem 1.6rem; mix-blend-mode: normal; background: linear-gradient(var(--bg) 55%, transparent); }
   .top-links a:not(.top-resume) { display: none; }
 
-  .stage { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4.5rem 1.25rem 5.5rem; }
-  .scroll-hint { display: none; }
-  .skip-player { left: auto; right: 1.25rem; top: 3.4rem; bottom: auto; font-size: 0.64rem; }
+  /* Phones: a normal-height stage you swipe sideways; vertical scrolling just moves down the page */
+  .player { height: auto; }
+  .stage { position: relative; height: auto; min-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5rem 1.25rem 6.5rem; touch-action: pan-y; }
+  .scroll-hint, .skip-player { display: none; }
+  .swipe-hint { display: flex; align-items: center; gap: 0.6rem; margin-top: 2rem; font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+  .swipe-hint span { color: var(--accent); animation: nudge 1.6s var(--ease) infinite; }
+  .swipe-hint span:last-child { animation-direction: reverse; }
+  @keyframes nudge { 50% { transform: translateX(-4px); } }
   .ghost { font-size: 42vw; top: 30%; -webkit-text-stroke-width: 1px; }
   .ghost-l { right: 86vw; }
   .ghost-r { left: 86vw; }
@@ -287,10 +293,14 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   .row:hover .row-title { transform: none; }
   .peek { display: none; }
 
-  .lane { grid-template-columns: 1fr; padding-left: 0; }
-  .lane-name { padding: 1rem 1.25rem 0; }
-  .lane-viewport { padding: 0.8rem 0 1rem; }
-  .lane-track li { font-size: 0.85rem; padding: 0.55rem 0.9rem; }
+  /* Stack: a steady two-column grid instead of moving lanes */
+  .lane { grid-template-columns: 1fr; padding: 1.2rem 1.25rem 1.3rem; }
+  .lane-name { margin-bottom: 0.8rem; }
+  .lane-viewport { overflow: visible; padding: 0; mask-image: none; -webkit-mask-image: none; }
+  .lane-track { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; width: auto; animation: none; }
+  .lane-track li[aria-hidden='true'] { display: none; }
+  .lane-track li { font-size: 0.85rem; padding: 0.7rem 0.85rem; border-radius: 14px; min-height: 48px; white-space: normal; line-height: 1.2; }
+  .lane-track li:hover { transform: none; }
 
   .journey li { grid-template-columns: 1fr; gap: 0.5rem; padding: 2rem 0; }
   .j-year { font-size: 4.2rem; }
