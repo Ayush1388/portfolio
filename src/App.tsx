@@ -27,6 +27,7 @@ import {
   stack,
   marquee,
   timeline,
+  imgColors,
 } from './data'
 import type { Tech } from './data'
 
@@ -50,16 +51,24 @@ function useTheme() {
 function useActiveSection(ids: string[]) {
   const [active, setActive] = useState(ids[0])
   useEffect(() => {
-    const els = ids.map((id) => document.getElementById(id)).filter(Boolean) as HTMLElement[]
-    const io = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((e) => e.isIntersecting)
-        if (visible.length) setActive(visible[0].target.id)
-      },
-      { rootMargin: '-40% 0px -55% 0px' },
-    )
-    els.forEach((el) => io.observe(el))
-    return () => io.disconnect()
+    // Home while at the very top; otherwise the last section whose box spans the reading line.
+    const update = () => {
+      if (window.scrollY < 80) return setActive(ids[0])
+      const line = window.innerHeight * 0.45
+      let current = ids[0]
+      for (const id of ids) {
+        const r = document.getElementById(id)?.getBoundingClientRect()
+        if (r && r.top <= line && r.bottom > 0) current = id
+      }
+      setActive(current)
+    }
+    update()
+    window.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    return () => {
+      window.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
   }, [ids])
   return active
 }
@@ -187,7 +196,8 @@ const dockItems = [
 
 /** Phone-only navigation: an app-style bottom dock instead of a squeezed desktop navbar. */
 function MobileDock() {
-  const active = useActiveSection(sectionIds)
+  const current = useActiveSection(sectionIds)
+  const active = current === 'about' ? 'home' : current
   return (
     <nav className="dock" aria-label="Sections">
       {dockItems.map(({ id, label, Icon }) => (
@@ -225,8 +235,7 @@ function Hero() {
             Building reliable systems with <span className="accent">Go.</span>
           </h1>
           <p className="hero-sub">
-            I'm Ayush Pandey, a B.Tech student fascinated by distributed systems. I enjoy designing
-            services that scale, and turning complex ideas into useful products.
+            Open to internships, collaborations and interesting problems.
           </p>
           <div className="hero-cta">
             <a href="#projects" className="btn btn-light">
@@ -247,7 +256,7 @@ function Hero() {
 
       <div className="hero-right">
         <div className="hero-right-glow" aria-hidden />
-        <div className="about-card card">
+        <div id="about" className="about-card card">
           <div className="about-card-top">
             <span className="avatar" aria-hidden>{profile.initials}</span>
             <div>
@@ -386,12 +395,22 @@ function Projects() {
 
 const lucideLogos = { db: Database, api: Webhook, design: Network }
 
+/** Near-black brand colours vanish on the dark theme, so they follow the text colour. */
+function isDarkHex(hex: string) {
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16))
+  return 0.299 * r + 0.587 * g + 0.114 * b < 60
+}
+
+function techColor(t: Tech) {
+  if (t.icon) return isDarkHex(t.icon.hex) ? 'var(--ink)' : `#${t.icon.hex}`
+  if (t.img) return imgColors[t.name] ?? 'var(--ink)'
+  return 'var(--muted)'
+}
+
 function TechLogo({ t }: { t: Tech }) {
   if (t.img) return <img className="logo" src={t.img} alt="" width={22} height={22} />
   if (t.icon) {
-    // Near-black brand colours vanish on the dark theme, so they follow the text colour.
-    const [r, g, b] = [0, 2, 4].map((i) => parseInt(t.icon!.hex.slice(i, i + 2), 16))
-    const dark = 0.299 * r + 0.587 * g + 0.114 * b < 60
+    const dark = isDarkHex(t.icon.hex)
     return (
       <svg className="logo" viewBox="0 0 24 24" width={22} height={22} aria-hidden fill={dark ? 'currentColor' : `#${t.icon.hex}`}>
         <path d={t.icon.path} />
@@ -412,10 +431,17 @@ function Skills() {
         <div className="stack">
           {stack.map((row, r) => (
             <Reveal key={row.group} delay={r * 70} className="stack-row">
-              <span className="stack-group">{row.group}</span>
+              <span className="stack-group">
+                {row.group}
+                <small>{String(row.items.length).padStart(2, '0')}</small>
+              </span>
               <ul className="stack-items">
-                {row.items.map((i) => (
-                  <li key={i.name} className={i.hot ? 'is-hot' : ''}>
+                {row.items.map((i, n) => (
+                  <li
+                    key={i.name}
+                    className={i.hot ? 'is-hot' : ''}
+                    style={{ '--c': techColor(i), '--i': n } as React.CSSProperties}
+                  >
                     <TechLogo t={i} />
                     {i.name}
                   </li>

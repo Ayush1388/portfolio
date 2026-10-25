@@ -19,7 +19,7 @@ export const profile = {
   resume: '/resume.pdf',
 }
 
-export const nav = ['Home', 'Projects', 'Skills', 'Experience', 'Contact']
+export const nav = ['Home', 'About', 'Projects', 'Skills', 'Experience', 'Contact']
 
 export type Category = 'Backend' | 'Full-stack' | 'Web3' | 'ML'
 
@@ -99,6 +99,8 @@ export const projects: Project[] = [
 ]
 
 export const categories: ('All' | Category)[] = ['All', 'Backend', 'Full-stack', 'Web3', 'ML']
+
+export const imgColors: Record<string, string> = { JavaScript: '#f7df1e', TypeScript: '#3178c6', 'VS Code': '#007acc' }
 
 export type Tech = { name: string; icon?: SimpleIcon; img?: string; lucide?: 'db' | 'api' | 'design'; hot?: boolean }
 
