@@ -32,6 +32,10 @@ export type Project = {
   demo?: string
   shot?: string
   featured?: boolean
+  /** Giant title on the player stage — keep it short. */
+  short: string
+  /** Generated cover art for projects without a live screenshot. */
+  art?: { hue: number; lines: string[] }
 }
 
 const gh = (repo: string) => `https://github.com/Ayush1388/${repo}`
@@ -39,6 +43,7 @@ const gh = (repo: string) => `https://github.com/Ayush1388/${repo}`
 export const projects: Project[] = [
   {
     title: 'AuctionEngine',
+    short: 'Auction',
     category: 'Backend',
     featured: true,
     blurb:
@@ -50,6 +55,8 @@ export const projects: Project[] = [
   },
   {
     title: 'Log Aggregator',
+    short: 'Logs',
+    art: { hue: 200, lines: ['INFO  ingest   batch=512  12ms', 'INFO  flush    pg  ok     4ms', 'WARN  backoff  retry=2', 'INFO  query    p99   38ms', 'INFO  ingest   batch=512  11ms'] },
     category: 'Backend',
     blurb:
       'A high-throughput, self-hosted observability pipeline and log aggregator built with Go, PostgreSQL, and React.',
@@ -58,6 +65,7 @@ export const projects: Project[] = [
   },
   {
     title: 'InternHunt',
+    short: 'InternHunt',
     category: 'Full-stack',
     blurb: 'A web platform to discover and track internship opportunities in one place.',
     tags: ['JavaScript'],
@@ -67,6 +75,7 @@ export const projects: Project[] = [
   },
   {
     title: 'Food Delivery',
+    short: 'Tomato',
     category: 'Full-stack',
     blurb: 'A food delivery website with a browsable menu and a smooth ordering experience.',
     tags: ['JavaScript'],
@@ -76,6 +85,8 @@ export const projects: Project[] = [
   },
   {
     title: 'HD Wallet',
+    short: 'Wallet',
+    art: { hue: 268, lines: ["m/44'/60'/0'/0/0", "m/44'/501'/0'/0'", 'bip39 · 12 words', 'ethers · solana/web3'] },
     category: 'Web3',
     blurb:
       'A simple crypto wallet interface built with React, TailwindCSS, Ethers.js, Solana Web3.js, and Bip39.',
@@ -84,6 +95,8 @@ export const projects: Project[] = [
   },
   {
     title: 'Decentralized Freelancing',
+    short: 'Freelance',
+    art: { hue: 150, lines: ['client  ──▶  escrow', 'escrow  ──▶  freelancer', 'on-chain · trustless', 'milestone.release()'] },
     category: 'Web3',
     blurb: 'A decentralized freelancing platform that connects clients and freelancers on-chain.',
     tags: ['JavaScript', 'Web3'],
@@ -91,6 +104,8 @@ export const projects: Project[] = [
   },
   {
     title: 'Fake News Detection',
+    short: 'FakeNews',
+    art: { hue: 0, lines: ['P(real) = 0.12', 'P(fake) = 0.88', 'tf-idf → classifier', 'verdict: FAKE'] },
     category: 'ML',
     blurb: 'A machine learning model that classifies news articles as real or fake.',
     tags: ['Python', 'ML', 'NLP'],

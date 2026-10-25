@@ -1,80 +1,82 @@
-import { useEffect, useRef, useState } from 'react'
-import type { ElementType, ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type { CSSProperties, ElementType, ReactNode } from 'react'
 import {
-  ArrowRight,
-  ArrowDown,
-  ExternalLink,
-  FileText,
-  GraduationCap,
-  House,
-  LayoutGrid,
-  Layers,
-  Route,
+  ArrowUpRight,
+  Database,
   Github,
   Linkedin,
-  Database,
   Mail,
   Network,
+  Pause,
+  Play,
+  SkipBack,
+  SkipForward,
   Webhook,
-  Moon,
-  Sun,
+  X,
 } from 'lucide-react'
-import {
-  profile,
-  nav,
-  projects,
-  categories,
-  stack,
-  marquee,
-  timeline,
-  imgColors,
-} from './data'
-import type { Tech } from './data'
+import { profile, projects, stack, timeline, imgColors } from './data'
+import type { Project, Tech } from './data'
 
-type Theme = 'light' | 'dark'
+/* ---------------------------------------------------------------- tracks */
 
-function useTheme() {
-  const [theme, setTheme] = useState<Theme>(
-    () => (document.documentElement.dataset.theme as Theme) || 'light',
+type Track = {
+  key: string
+  short: string
+  kicker: string
+  sub: string
+  blurb: string
+  shot?: string
+  art: { hue: number; lines: string[] }
+  links: { label: string; href: string }[]
+}
+
+const intro: Track = {
+  key: 'intro',
+  short: 'Ayush',
+  kicker: 'Software engineer',
+  sub: "SRM IST · Class of '28",
+  blurb: 'B.Tech CS student fascinated by distributed systems. Building in Go since my second year.',
+  art: { hue: 22, lines: ['package main', '', 'func main() {', '  build(distributed.Systems)', '}'] },
+  links: [
+    { label: 'About me', href: '#about' },
+    { label: 'Resume', href: profile.resume },
+  ],
+}
+
+const toTrack = (p: Project): Track => ({
+  key: p.title,
+  short: p.short,
+  kicker: p.category === 'Backend' ? 'Distributed systems' : p.category,
+  sub: p.tags.slice(0, 3).join(' · '),
+  blurb: p.blurb,
+  shot: p.shot,
+  art: p.art ?? { hue: 22, lines: [] },
+  links: [
+    ...(p.demo ? [{ label: 'Live', href: p.demo }] : []),
+    { label: 'Code', href: p.repo },
+  ],
+})
+
+const tracks: Track[] = [intro, ...projects.map(toTrack)]
+const pad = (n: number) => String(n).padStart(2, '0')
+const TRACK_MS = 8000
+
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(
+    () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches,
   )
   useEffect(() => {
-    document.documentElement.dataset.theme = theme
-    try {
-      localStorage.setItem('theme', theme)
-    } catch {
-      /* storage unavailable */
-    }
-  }, [theme])
-  return [theme, () => setTheme((t) => (t === 'light' ? 'dark' : 'light'))] as const
+    const mq = matchMedia('(prefers-reduced-motion: reduce)')
+    const on = () => setReduced(mq.matches)
+    mq.addEventListener('change', on)
+    return () => mq.removeEventListener('change', on)
+  }, [])
+  return reduced
 }
 
-function useActiveSection(ids: string[]) {
-  const [active, setActive] = useState(ids[0])
-  useEffect(() => {
-    // Home while at the very top; otherwise the last section whose box spans the reading line.
-    const update = () => {
-      if (window.scrollY < 80) return setActive(ids[0])
-      const line = window.innerHeight * 0.45
-      let current = ids[0]
-      for (const id of ids) {
-        const r = document.getElementById(id)?.getBoundingClientRect()
-        if (r && r.top <= line && r.bottom > 0) current = id
-      }
-      setActive(current)
-    }
-    update()
-    window.addEventListener('scroll', update, { passive: true })
-    window.addEventListener('resize', update)
-    return () => {
-      window.removeEventListener('scroll', update)
-      window.removeEventListener('resize', update)
-    }
-  }, [ids])
-  return active
-}
+/* --------------------------------------------------------------- reveal */
 
-/** True once the element has scrolled into view (fires once). */
-function useInView<T extends HTMLElement>(threshold = 0.15) {
+function useInView<T extends HTMLElement>(threshold = 0.2) {
   const ref = useRef<T>(null)
   const [seen, setSeen] = useState(false)
   useEffect(() => {
@@ -109,285 +111,353 @@ function Reveal({
   const Tag: ElementType = as ?? 'div'
   const [ref, seen] = useInView<HTMLElement>()
   return (
-    <Tag
-      ref={ref}
-      className={`reveal ${seen ? 'is-in' : ''} ${className}`}
-      style={{ '--d': `${delay}ms` } as React.CSSProperties}
-    >
+    <Tag ref={ref} className={`reveal ${seen ? 'is-in' : ''} ${className}`} style={{ '--d': `${delay}ms` } as CSSProperties}>
       {children}
     </Tag>
   )
 }
 
-/** Cursor-follow spotlight on every .card, via delegated pointer events. */
-function useSpotlight() {
-  useEffect(() => {
-    const onMove = (e: PointerEvent) => {
-      const card = (e.target as HTMLElement).closest<HTMLElement>('.card')
-      if (!card) return
-      const r = card.getBoundingClientRect()
-      card.style.setProperty('--mx', `${e.clientX - r.left}px`)
-      card.style.setProperty('--my', `${e.clientY - r.top}px`)
-    }
-    document.addEventListener('pointermove', onMove)
-    return () => document.removeEventListener('pointermove', onMove)
-  }, [])
-}
-
-function ScrollProgress() {
-  const [p, setP] = useState(0)
-  useEffect(() => {
-    const onScroll = () => {
-      const h = document.documentElement
-      setP(h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight))
-    }
-    onScroll()
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-  return <div className="progress" style={{ transform: `scaleX(${p})` }} aria-hidden />
-}
-
-const sectionIds = nav.map((n) => n.toLowerCase())
-
-function Navbar({ theme, toggle }: { theme: Theme; toggle: () => void }) {
-  const active = useActiveSection(sectionIds)
+/** Headline that rises in word by word once it scrolls into view. */
+function WordReveal({ text, className = '' }: { text: string; className?: string }) {
+  const [ref, seen] = useInView<HTMLParagraphElement>(0.35)
   return (
-    <header className="nav-wrap">
-      <nav className="nav" aria-label="Primary">
-        <a href="#home" className="nav-logo" aria-label="Home">
-          {profile.initials}
-        </a>
-        <ul className="nav-links">
-          {nav.map((n) => (
-            <li key={n}>
-              <a
-                href={`#${n.toLowerCase()}`}
-                className={active === n.toLowerCase() ? 'is-active' : ''}
-                aria-current={active === n.toLowerCase() ? 'true' : undefined}
-              >
-                {n}
-              </a>
-            </li>
-          ))}
-        </ul>
-        <button
-          className="icon-btn"
-          onClick={toggle}
-          aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-        >
-          {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
-        </button>
-        <a href={profile.resume} className="btn btn-ink btn-sm nav-resume">
-          Resume <ArrowRight size={14} />
-        </a>
-      </nav>
-    </header>
-  )
-}
-
-const dockItems = [
-  { id: 'home', label: 'Home', Icon: House },
-  { id: 'projects', label: 'Work', Icon: LayoutGrid },
-  { id: 'skills', label: 'Stack', Icon: Layers },
-  { id: 'experience', label: 'Journey', Icon: Route },
-  { id: 'contact', label: 'Contact', Icon: Mail },
-]
-
-/** Phone-only navigation: an app-style bottom dock instead of a squeezed desktop navbar. */
-function MobileDock() {
-  const current = useActiveSection(sectionIds)
-  const active = current === 'about' ? 'home' : current
-  return (
-    <nav className="dock" aria-label="Sections">
-      {dockItems.map(({ id, label, Icon }) => (
-        <a key={id} href={`#${id}`} className={active === id ? 'is-active' : ''} aria-current={active === id ? 'true' : undefined}>
-          <Icon size={20} aria-hidden />
-          <span>{label}</span>
-        </a>
+    <p ref={ref} className={`words ${seen ? 'is-in' : ''} ${className}`} aria-label={text}>
+      {text.split(' ').map((w, i) => (
+        <span key={i} className="word" aria-hidden style={{ '--i': i } as CSSProperties}>
+          <span>{w}</span>
+        </span>
       ))}
-    </nav>
+    </p>
   )
 }
 
-function SectionHead({ label, title, children }: { label: string; title: string; children?: ReactNode }) {
+/* ---------------------------------------------------------------- pieces */
+
+function Badge({ text, children, className = '' }: { text: string; children?: ReactNode; className?: string }) {
+  const id = `badge-${text.length}-${className}`
   return (
-    <Reveal className="section-head">
-      <div>
-        <p className="label">{label}</p>
-        <h2 className="display">{title}</h2>
-      </div>
+    <div className={`badge ${className}`}>
+      <svg viewBox="0 0 120 120" className="badge-text" aria-hidden>
+        <defs>
+          <path id={id} d="M60,60 m-46,0 a46,46 0 1,1 92,0 a46,46 0 1,1 -92,0" />
+        </defs>
+        <text>
+          <textPath href={`#${id}`}>{text}</textPath>
+        </text>
+      </svg>
       {children}
-    </Reveal>
+    </div>
   )
 }
 
-function Hero() {
+function Cover({ t, index }: { t: Track; index: number }) {
   return (
-    <section id="home" className="hero">
-      <div className="hero-left">
-        <span className="orb orb-a" aria-hidden />
-        <span className="orb orb-b" aria-hidden />
-        <div className="hero-grid" aria-hidden />
-        <div className="hero-inner">
-          <p className="label label-on-dark">{profile.role}</p>
-          <h1 className="hero-title">
-            Building reliable systems with <span className="accent">Go.</span>
-          </h1>
-          <p className="hero-sub">
-            Open to internships, collaborations and interesting problems.
-          </p>
-          <div className="hero-cta">
-            <a href="#projects" className="btn btn-light">
-              View my work <ArrowRight size={16} />
-            </a>
-            <a href={profile.resume} className="btn btn-outline-dark" download>
-              <FileText size={16} /> Download resume
-            </a>
-            <a href="#contact" className="btn btn-outline-dark">
-              <Mail size={16} /> Contact me
-            </a>
+    <div className="cover" style={{ '--h': t.art.hue } as CSSProperties}>
+      {t.shot ? (
+        <img src={t.shot} alt={`${t.key} landing page`} />
+      ) : (
+        <div className="cover-art" aria-hidden>
+          <span className="cover-glyph">{t.short.slice(0, 2)}</span>
+          <pre>{t.art.lines.join('\n')}</pre>
+        </div>
+      )}
+      <span className="cover-wear" aria-hidden />
+      <span className="cover-index" aria-hidden>{pad(index)}</span>
+    </div>
+  )
+}
+
+/* ---------------------------------------------------------------- player */
+
+function Player({ index, setIndex }: { index: number; setIndex: (fn: (i: number) => number) => void }) {
+  const reduced = usePrefersReducedMotion()
+  const [hold, setHold] = useState(false)
+  const [userPaused, setUserPaused] = useState(false)
+  const [dir, setDir] = useState(1)
+  const touchX = useRef<number | null>(null)
+  const n = tracks.length
+  const t = tracks[index]
+  const prev = tracks[(index - 1 + n) % n]
+  const next = tracks[(index + 1) % n]
+  const playing = !reduced && !userPaused && !hold
+
+  const go = useCallback(
+    (step: number) => {
+      setDir(step)
+      setIndex((i) => (i + step + n) % n)
+    },
+    [n, setIndex],
+  )
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || window.scrollY > window.innerHeight * 0.6) return
+      if (e.key === 'ArrowRight') go(1)
+      if (e.key === 'ArrowLeft') go(-1)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [go])
+
+  // Pause the timer while the tab is hidden.
+  useEffect(() => {
+    const onVis = () => setHold(document.hidden)
+    document.addEventListener('visibilitychange', onVis)
+    return () => document.removeEventListener('visibilitychange', onVis)
+  }, [])
+
+  const seg = 100 / n
+
+  return (
+    <section
+      id="home"
+      className={`stage ${dir > 0 ? 'fwd' : 'back'}`}
+      aria-roledescription="carousel"
+      aria-label="Projects player"
+      onMouseEnter={() => setHold(true)}
+      onMouseLeave={() => setHold(false)}
+      onTouchStart={(e) => (touchX.current = e.touches[0].clientX)}
+      onTouchEnd={(e) => {
+        if (touchX.current === null) return
+        const dx = e.changedTouches[0].clientX - touchX.current
+        if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1)
+        touchX.current = null
+      }}
+    >
+      <span className="ghost ghost-l" key={`gl-${prev.key}`} aria-hidden>{prev.short}</span>
+      <span className="ghost ghost-r" key={`gr-${next.key}`} aria-hidden>{next.short}</span>
+
+      <div className="deck" key={t.key} aria-live="polite">
+        <Cover t={t} index={index + 1} />
+        <h1 className="track-title" style={{ '--len': t.short.length } as CSSProperties} aria-label={t.short}>
+          {t.short.split('').map((c, i) => (
+            <span key={i} aria-hidden style={{ '--i': i } as CSSProperties}>{c}</span>
+          ))}
+        </h1>
+        <div className="track-meta">
+          <p className="kicker">{t.kicker}</p>
+          <p className="sub">{t.sub}</p>
+          <p className="blurb">{t.blurb}</p>
+          <div className="track-links">
+            {t.links.map((l) => (
+              <a key={l.label} href={l.href} {...(l.href.startsWith('http') ? { target: '_blank', rel: 'noreferrer' } : {})}>
+                {l.label} <ArrowUpRight size={14} aria-hidden />
+              </a>
+            ))}
           </div>
         </div>
-        <a href="#projects" className="scroll-cue label label-on-dark">
-          <ArrowDown size={16} className="bob" /> Scroll down
-        </a>
       </div>
 
-      <div className="hero-right">
-        <div className="hero-right-glow" aria-hidden />
-        <div id="about" className="about-card card">
-          <div className="about-card-top">
-            <span className="avatar" aria-hidden>{profile.initials}</span>
-            <div>
-              <p className="label">About me</p>
-              <p className="about-name">{profile.name}</p>
-            </div>
-          </div>
-          <h2 className="display about-h">
-            Hi, I build things <em>that scale.</em>
-          </h2>
-          <p className="muted about-p">
-            B.Tech Computer Science student at {profile.university}. I'm interested in distributed
-            systems, and I've been shipping projects since my second year — mostly in Go, plus
-            full-stack apps and a bit of Web3 and ML.
-          </p>
-          <p className="edu">
-            <GraduationCap size={16} /> B.Tech CS · 2024 – 2028
-          </p>
-          <p className="now">
-            <span className="pulse" aria-hidden />
-            <span>
-              Currently building <strong>AuctionEngine</strong>, a distributed live auction platform in Go.
-            </span>
-          </p>
+      <Badge text="NEXT ✦ SEE THE NEXT PROJECT ✦ " className="next-badge">
+        <button className="badge-btn" onClick={() => go(1)} aria-label={`Next: ${next.short}`}>
+          <SkipForward size={18} />
+        </button>
+        <svg viewBox="0 0 120 120" className="ring" aria-hidden>
+          <circle
+            key={t.key}
+            cx="60"
+            cy="60"
+            r="34"
+            pathLength={100}
+            className="ring-fill"
+            style={{ '--dur': `${TRACK_MS}ms`, animationPlayState: playing ? 'running' : 'paused' } as CSSProperties}
+            onAnimationEnd={() => go(1)}
+          />
+        </svg>
+      </Badge>
+
+      <div className="console">
+        <svg className="arc" viewBox="0 0 400 60" preserveAspectRatio="none" aria-hidden>
+          <path d="M10,58 Q200,-40 390,58" pathLength={100} className="arc-track" />
+          <path
+            d="M10,58 Q200,-40 390,58"
+            pathLength={100}
+            className="arc-seg"
+            style={{ strokeDasharray: `${seg} ${100 - seg}`, strokeDashoffset: -index * seg }}
+          />
+        </svg>
+        <p className="mini-title" aria-hidden>
+          <span>{pad(index + 1)}</span> {t.short}
+        </p>
+        <div className="console-row">
+          <button onClick={() => go(-1)} aria-label={`Previous: ${prev.short}`}>
+            <SkipBack size={16} />
+          </button>
+          <button className="menu-btn" onClick={() => document.dispatchEvent(new Event('open-menu'))}>
+            Menu
+          </button>
+          <button onClick={() => setUserPaused((p) => !p)} aria-label={userPaused ? 'Resume autoplay' : 'Pause autoplay'} className="pp-btn">
+            {userPaused || reduced ? <Play size={14} /> : <Pause size={14} />}
+          </button>
+          <button onClick={() => go(1)} aria-label={`Next: ${next.short}`}>
+            <SkipForward size={16} />
+          </button>
         </div>
-        <span className="float-chip fc-1" aria-hidden>Go</span>
-        <span className="float-chip fc-2" aria-hidden>Redis</span>
-        <span className="float-chip fc-3" aria-hidden>Kafka</span>
-        <span className="float-chip fc-4" aria-hidden>PostgreSQL</span>
+        <span className="counter" aria-hidden>
+          {pad(index + 1)} / {pad(n)}
+        </span>
       </div>
     </section>
   )
 }
 
-function Marquee() {
-  const items = [...marquee, ...marquee]
+/* ------------------------------------------------------------------ menu */
+
+const sections = [
+  ['Player', '#home'],
+  ['About', '#about'],
+  ['Work', '#work'],
+  ['Stack', '#stack'],
+  ['Journey', '#journey'],
+  ['Contact', '#contact'],
+] as const
+
+function Menu({ onPick }: { onPick: (i: number) => void }) {
+  const [open, setOpen] = useState(false)
+  const closeRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    const show = () => setOpen(true)
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    document.addEventListener('open-menu', show)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('open-menu', show)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [])
+  useEffect(() => {
+    document.body.style.overflow = open ? 'hidden' : ''
+    if (open) closeRef.current?.focus()
+  }, [open])
+
   return (
-    <div className="marquee" aria-hidden>
-      <ul className="marquee-track">
-        {items.map((m, i) => (
-          <li key={i}>
-            <span className="marquee-dot" /> {m}
-          </li>
+    <div className={`menu ${open ? 'is-open' : ''}`} role="dialog" aria-modal="true" aria-label="Menu" aria-hidden={!open}>
+      <button ref={closeRef} className="menu-close" onClick={() => setOpen(false)} tabIndex={open ? 0 : -1}>
+        Close <X size={16} />
+      </button>
+      <nav className="menu-nav" aria-label="Sections">
+        {sections.map(([label, href], i) => (
+          <a key={href} href={href} onClick={() => setOpen(false)} style={{ '--i': i } as CSSProperties} tabIndex={open ? 0 : -1}>
+            <small>{pad(i + 1)}</small>
+            {label}
+          </a>
         ))}
-      </ul>
+      </nav>
+      <div className="menu-side">
+        <p className="label">Tracklist</p>
+        <ol>
+          {tracks.map((t, i) => (
+            <li key={t.key}>
+              <button
+                tabIndex={open ? 0 : -1}
+                onClick={() => {
+                  onPick(i)
+                  setOpen(false)
+                  document.getElementById('home')?.scrollIntoView()
+                }}
+              >
+                <span>{pad(i + 1)}</span> {t.key === 'intro' ? 'Intro' : t.key}
+              </button>
+            </li>
+          ))}
+        </ol>
+        <p className="label">Elsewhere</p>
+        <p className="menu-links">
+          <a href={profile.github} target="_blank" rel="noreferrer" tabIndex={open ? 0 : -1}>GitHub</a>
+          <a href={profile.linkedin} target="_blank" rel="noreferrer" tabIndex={open ? 0 : -1}>LinkedIn</a>
+          <a href={`mailto:${profile.email}`} tabIndex={open ? 0 : -1}>Email</a>
+        </p>
+      </div>
     </div>
   )
 }
 
-function Projects() {
-  const [cat, setCat] = useState<(typeof categories)[number]>('All')
-  const shown = projects.filter((p) => cat === 'All' || p.category === cat)
+/* -------------------------------------------------------------- sections */
+
+function Head({ n, label, title }: { n: string; label: string; title: string }) {
   return (
-    <section id="projects" className="section">
+    <Reveal className="head">
+      <p className="label">
+        ({n}) — {label}
+      </p>
+      <h2 className="h2">{title}</h2>
+    </Reveal>
+  )
+}
+
+function About() {
+  const facts = [
+    ['Studying', `B.Tech CS · ${profile.university}`],
+    ['Class of', '2024 – 2028'],
+    ['Building since', 'My second year'],
+    ['Now playing', 'AuctionEngine, a distributed live auction engine'],
+  ]
+  return (
+    <section id="about" className="section">
       <div className="wrap">
-        <SectionHead label="My work" title="My Projects">
-          <a href={profile.github} className="btn btn-outline btn-sm" target="_blank" rel="noreferrer">
-            All on GitHub <ArrowRight size={14} />
-          </a>
-        </SectionHead>
-
-        <Reveal delay={60}>
-          <div className="filters" role="tablist" aria-label="Filter projects">
-            {categories.map((c) => (
-              <button
-                key={c}
-                role="tab"
-                aria-selected={cat === c}
-                className={`filter ${cat === c ? 'is-on' : ''}`}
-                onClick={() => setCat(c)}
-              >
-                {c}
-                <span className="filter-n">
-                  {c === 'All' ? projects.length : projects.filter((p) => p.category === c).length}
-                </span>
-              </button>
-            ))}
-          </div>
-        </Reveal>
-
-        <div className="proj-grid" key={cat}>
-          {shown.map((p, i) => (
-            <article
-              key={p.title}
-              className={`card proj pop ${p.featured && cat === 'All' ? 'proj-featured' : ''}`}
-              style={{ '--d': `${i * 55}ms` } as React.CSSProperties}
-            >
-              <div className="proj-shot">
-                {p.shot ? (
-                  <img src={p.shot} alt={`${p.title} landing page`} loading="lazy" />
-                ) : (
-                  <div className="shot-fallback" aria-hidden>
-                    <span>{p.title}</span>
-                    <small>{p.tags.slice(0, 3).join(' · ')}</small>
-                  </div>
-                )}
-              </div>
-              <div className="proj-top">
-                {p.featured ? (
-                  <p className="featured-tag"><span className="dot" /> Featured project</p>
-                ) : (
-                  <p className="featured-tag">{p.category}</p>
-                )}
-                <a
-                  href={p.demo ?? p.repo}
-                  className="proj-ext"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={`${p.title} ${p.demo ? 'live demo' : 'on GitHub'}`}
-                >
-                  <ExternalLink size={16} />
-                </a>
-              </div>
-              <h3 className="display card-title">{p.title}</h3>
-              <p className="muted">{p.blurb}</p>
-              <ul className="tags">
-                {p.tags.map((t) => <li key={t}>{t}</li>)}
-              </ul>
-              <div className="proj-actions">
-                {p.demo && (
-                  <a href={p.demo} className="btn btn-ink btn-sm" target="_blank" rel="noreferrer">
-                    Live demo <ArrowRight size={14} />
-                  </a>
-                )}
-                <a href={p.repo} className="btn btn-outline btn-sm" target="_blank" rel="noreferrer">
-                  <Github size={14} /> View on GitHub
-                </a>
-              </div>
-            </article>
+        <p className="label">(01) — Liner notes</p>
+        <WordReveal
+          className="statement"
+          text="I'm Ayush. I build distributed systems in Go, and the products that sit on top of them."
+        />
+        <dl className="facts">
+          {facts.map(([k, v], i) => (
+            <Reveal key={k} delay={i * 90} className="fact">
+              <dt>{k}</dt>
+              <dd>{v}</dd>
+            </Reveal>
           ))}
-        </div>
+        </dl>
+      </div>
+    </section>
+  )
+}
+
+function Work({ onPick }: { onPick: (i: number) => void }) {
+  const [hover, setHover] = useState<number | null>(null)
+  const peek = useRef<HTMLDivElement>(null)
+  return (
+    <section id="work" className="section">
+      <div className="wrap">
+        <Head n="02" label="Tracklist" title="Selected work" />
+        <ol
+          className="tracklist"
+          onMouseMove={(e) => {
+            peek.current?.style.setProperty('--x', `${e.clientX}px`)
+            peek.current?.style.setProperty('--y', `${e.clientY}px`)
+          }}
+          onMouseLeave={() => setHover(null)}
+        >
+          {projects.map((p, i) => {
+            const t = tracks[i + 1]
+            return (
+              <Reveal as="li" key={p.title} delay={i * 60}>
+                <button
+                  className="row"
+                  onMouseEnter={() => setHover(i + 1)}
+                  onFocus={() => setHover(i + 1)}
+                  onClick={() => {
+                    onPick(i + 1)
+                    document.getElementById('home')?.scrollIntoView()
+                  }}
+                  aria-label={`Play ${p.title} in the player`}
+                >
+                  <span className="row-n">{pad(i + 2)}</span>
+                  <span className="row-thumb" aria-hidden>
+                    <Cover t={t} index={i + 2} />
+                  </span>
+                  <span className="row-title">{p.title}</span>
+                  <span className="row-cat">{p.category}</span>
+                  <span className="row-tags">{p.tags.slice(0, 3).join(' · ')}</span>
+                  <Play className="row-play" size={16} aria-hidden />
+                </button>
+              </Reveal>
+            )
+          })}
+        </ol>
+      </div>
+      <div ref={peek} className={`peek ${hover !== null ? 'is-on' : ''}`} aria-hidden>
+        {hover !== null && <Cover t={tracks[hover]} index={hover + 1} />}
       </div>
     </section>
   )
@@ -395,81 +465,77 @@ function Projects() {
 
 const lucideLogos = { db: Database, api: Webhook, design: Network }
 
-/** Near-black brand colours vanish on the dark theme, so they follow the text colour. */
 function isDarkHex(hex: string) {
   const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16))
   return 0.299 * r + 0.587 * g + 0.114 * b < 60
 }
 
 function techColor(t: Tech) {
-  if (t.icon) return isDarkHex(t.icon.hex) ? 'var(--ink)' : `#${t.icon.hex}`
-  if (t.img) return imgColors[t.name] ?? 'var(--ink)'
-  return 'var(--muted)'
+  if (t.icon) return isDarkHex(t.icon.hex) ? '#f1ede6' : `#${t.icon.hex}`
+  if (t.img) return imgColors[t.name] ?? '#f1ede6'
+  return '#9a958c'
 }
 
 function TechLogo({ t }: { t: Tech }) {
   if (t.img) return <img className="logo" src={t.img} alt="" width={22} height={22} />
-  if (t.icon) {
-    const dark = isDarkHex(t.icon.hex)
+  if (t.icon)
     return (
-      <svg className="logo" viewBox="0 0 24 24" width={22} height={22} aria-hidden fill={dark ? 'currentColor' : `#${t.icon.hex}`}>
+      <svg className="logo" viewBox="0 0 24 24" width={22} height={22} aria-hidden fill={techColor(t)}>
         <path d={t.icon.path} />
       </svg>
     )
-  }
   const L = lucideLogos[t.lucide ?? 'api']
-  return <L className="logo logo-lucide" size={22} aria-hidden />
+  return <L className="logo" size={22} aria-hidden color={techColor(t)} />
 }
 
-function Skills() {
+function Stack() {
   return (
-    <section id="skills" className="section">
+    <section id="stack" className="section">
       <div className="wrap">
-        <SectionHead label="Tech stack" title="Tools & Technologies">
-          <p className="muted side-note">Technologies I use to build, deploy and monitor scalable systems.</p>
-        </SectionHead>
-        <div className="stack">
-          {stack.map((row, r) => (
-            <Reveal key={row.group} delay={r * 70} className="stack-row">
-              <span className="stack-group">
-                {row.group}
-                <small>{String(row.items.length).padStart(2, '0')}</small>
-              </span>
-              <ul className="stack-items">
-                {row.items.map((i, n) => (
+        <Head n="03" label="Instruments" title="The stack" />
+      </div>
+      <div className="lanes">
+        {stack.map((row, r) => (
+          <Reveal key={row.group} delay={r * 80} className={`lane ${r % 2 ? 'rev' : ''}`}>
+            <span className="lane-name">{row.group}</span>
+            <div className="lane-viewport">
+              <ul className="lane-track" style={{ '--speed': `${26 + row.items.length * 3}s` } as CSSProperties}>
+                {[...row.items, ...row.items, ...row.items, ...row.items].map((t, i) => (
                   <li
-                    key={i.name}
-                    className={i.hot ? 'is-hot' : ''}
-                    style={{ '--c': techColor(i), '--i': n } as React.CSSProperties}
+                    key={i}
+                    className={t.hot ? 'is-hot' : ''}
+                    style={{ '--c': techColor(t) } as CSSProperties}
+                    aria-hidden={i >= row.items.length}
                   >
-                    <TechLogo t={i} />
-                    {i.name}
+                    <TechLogo t={t} />
+                    {t.name}
                   </li>
                 ))}
               </ul>
-            </Reveal>
-          ))}
-        </div>
+            </div>
+          </Reveal>
+        ))}
       </div>
     </section>
   )
 }
 
-function Experience() {
+function Journey() {
+  const years = ['2024', '2025', 'Now']
   return (
-    <section id="experience" className="section">
+    <section id="journey" className="section">
       <div className="wrap">
-        <SectionHead label="Experience" title="Experience & Education" />
-        <ol className="timeline">
+        <Head n="04" label="Journey" title="So far" />
+        <ol className="journey">
           {timeline.map((t, i) => (
-            <Reveal as="li" key={t.title} delay={i * 120}>
-              <span className="tl-dot" aria-hidden />
-              <div className="tl-head">
+            <Reveal as="li" key={t.title} delay={i * 110}>
+              <span className="j-year" aria-hidden>{years[i]}</span>
+              <div>
+                <p className="j-when">{t.when}</p>
                 <h3>{t.title}</h3>
-                <p className="tl-place">{t.place}</p>
-                <p className="muted tl-when">{t.when}</p>
+                <p className="j-place">{t.place}</p>
+                <p className="j-text">{t.text}</p>
               </div>
-              <p className="muted tl-text">{t.text}</p>
             </Reveal>
           ))}
         </ol>
@@ -480,67 +546,67 @@ function Experience() {
 
 function Contact() {
   return (
-    <section id="contact" className="contact">
-      <span className="orb orb-c" aria-hidden />
+    <section id="contact" className="section contact">
       <div className="wrap">
-        <p className="label label-on-dark">Get in touch</p>
+        <p className="label">(05) — Contact</p>
+        <a className="talk" href={`mailto:${profile.email}`}>
+          <span className="talk-line">Let's</span>
+          <span className="talk-line talk-out">talk</span>
+          <Badge text="OPEN TO INTERNSHIPS ✦ SAY HELLO ✦ " className="talk-badge">
+            <ArrowUpRight size={22} aria-hidden />
+          </Badge>
+        </a>
         <div className="contact-grid">
-          <Reveal>
-            <h2 className="contact-title">Let's build something great.</h2>
-            <p className="contact-sub">
-              I'm always open to discussing new projects, collaborations or internship
-              opportunities. Feel free to reach out!
-            </p>
-            <a href={`mailto:${profile.email}`} className="btn btn-light">
-              Send a message <ArrowRight size={16} />
-            </a>
-          </Reveal>
-          <Reveal as="ul" delay={120} className="contact-links">
-            <li>
-              <a href={profile.github} target="_blank" rel="noreferrer">
-                <Github size={18} /> {profile.githubLabel}
-              </a>
-            </li>
-            <li>
-              <a href={profile.linkedin} target="_blank" rel="noreferrer">
-                <Linkedin size={18} /> {profile.linkedinLabel}
-              </a>
-            </li>
-            <li>
-              <a href={`mailto:${profile.email}`}>
-                <Mail size={18} /> {profile.email}
-              </a>
-            </li>
-          </Reveal>
+          <a href={`mailto:${profile.email}`}>
+            <Mail size={18} aria-hidden /> {profile.email}
+          </a>
+          <a href={profile.github} target="_blank" rel="noreferrer">
+            <Github size={18} aria-hidden /> {profile.githubLabel}
+          </a>
+          <a href={profile.linkedin} target="_blank" rel="noreferrer">
+            <Linkedin size={18} aria-hidden /> {profile.linkedinLabel}
+          </a>
         </div>
         <footer className="footer">
-          <p>© 2026 {profile.name}. Built with React and a lot of coffee.</p>
-          <ul>
-            {nav.map((n) => (
-              <li key={n}><a href={`#${n.toLowerCase()}`}>{n}</a></li>
-            ))}
-          </ul>
+          <p>© 2026 {profile.name}</p>
+          <p>Built with React, Go energy and a lot of coffee.</p>
         </footer>
       </div>
     </section>
   )
 }
 
+function TopBar() {
+  return (
+    <header className="top">
+      <a href="#home" className="brand" aria-label="Home">
+        <span className="brand-sq" aria-hidden /> AP.
+      </a>
+      <nav className="top-links" aria-label="Primary">
+        <a href="#about">About</a>
+        <a href="#work">Work</a>
+        <a href="#contact">Contact</a>
+        <a href={profile.resume} className="top-resume">Resume</a>
+      </nav>
+    </header>
+  )
+}
+
 export default function App() {
-  const [theme, toggle] = useTheme()
-  useSpotlight()
+  const [index, setIndex] = useState(0)
+  const pick = (i: number) => setIndex(() => i)
   return (
     <>
-      <a href="#projects" className="skip-link">Skip to content</a>
-      <ScrollProgress />
-      <Navbar theme={theme} toggle={toggle} />
-      <MobileDock />
+      <a href="#about" className="skip-link">Skip to content</a>
+      <div className="grain" aria-hidden />
+      <TopBar />
+      <Menu onPick={pick} />
       <main>
-        <Hero />
-        <Marquee />
-        <Projects />
-        <Skills />
-        <Experience />
+        <Player index={index} setIndex={setIndex} />
+        <About />
+        <Work onPick={pick} />
+        <Stack />
+        <Journey />
         <Contact />
       </main>
     </>
