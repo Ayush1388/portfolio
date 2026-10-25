@@ -305,8 +305,10 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
   .journey li { grid-template-columns: 1fr; gap: 0.5rem; padding: 2rem 0; }
   .j-year { font-size: 4.2rem; }
 
-  .talk { font-size: 23vw; margin-top: 1rem; }
-  .talk-badge { width: 96px; height: 96px; top: auto; bottom: -1rem; right: 0; }
+  /* Both words fit inside the gutters; the badge drops below them instead of covering the K */
+  .talk { font-size: 19vw; }
+  .talk-out { padding-left: 0.3em; }
+  .talk-badge { position: relative; top: auto; right: auto; width: 96px; height: 96px; margin: 1.25rem 0 0 auto; }
   .contact-grid { grid-template-columns: 1fr; margin-top: 3.5rem; }
   .contact-grid a, .contact-grid a + a { padding: 1.15rem 0; border-left: 0; border-bottom: 1px solid var(--line); }
   .footer { margin-top: 3rem; flex-direction: column; }
