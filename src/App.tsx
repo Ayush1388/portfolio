@@ -8,8 +8,11 @@ import {
   GraduationCap,
   Github,
   Linkedin,
+  Database,
   Mail,
   Menu,
+  Network,
+  Webhook,
   Moon,
   Sun,
   X,
@@ -24,6 +27,7 @@ import {
   marquee,
   timeline,
 } from './data'
+import type { Tech } from './data'
 
 type Theme = 'light' | 'dark'
 
@@ -234,8 +238,8 @@ function Hero() {
             Building reliable systems with <span className="accent">Go.</span>
           </h1>
           <p className="hero-sub">
-            I'm Ayush Pandey, a B.Tech student who enjoys building scalable backend systems,
-            exploring distributed architectures, and turning complex ideas into useful products.
+            I'm Ayush Pandey, a B.Tech student fascinated by distributed systems. I enjoy designing
+            services that scale, and turning complex ideas into useful products.
           </p>
           <div className="hero-cta">
             <a href="#projects" className="btn btn-light">
@@ -249,7 +253,7 @@ function Hero() {
             </a>
           </div>
         </div>
-        <a href="#about" className="scroll-cue label label-on-dark">
+        <a href="#projects" className="scroll-cue label label-on-dark">
           <ArrowDown size={16} className="bob" /> Scroll down
         </a>
       </div>
@@ -268,8 +272,9 @@ function Hero() {
             Hi, I build things <em>that scale.</em>
           </h2>
           <p className="muted about-p">
-            B.Tech Computer Science student at {profile.university}. I've been shipping projects since
-            my second year — backend systems in Go, full-stack apps, and a bit of Web3 and ML.
+            B.Tech Computer Science student at {profile.university}. I'm interested in distributed
+            systems, and I've been shipping projects since my second year — mostly in Go, plus
+            full-stack apps and a bit of Web3 and ML.
           </p>
           <p className="edu">
             <GraduationCap size={16} /> B.Tech CS · 2024 – 2028
@@ -305,22 +310,13 @@ function Marquee() {
   )
 }
 
-function About() {
+function Stats() {
   return (
-    <section id="about" className="section">
+    <section className="section stats-section" aria-label="At a glance">
       <div className="wrap">
-        <SectionHead label="About me" title="Backend first, curious about everything." />
-        <Reveal delay={80}>
-          <p className="statement">
-            I started building in my second year and haven't stopped since. I like Go for the
-            simplicity, distributed systems for the hard problems, and shipping things people can
-            actually use. From live auctions and log pipelines to wallets and ML models, I learn
-            by building.
-          </p>
-        </Reveal>
         <div className="stat-grid">
           {stats.map((s, i) => (
-            <Reveal key={s.label} delay={120 + i * 90} className="card stat">
+            <Reveal key={s.label} delay={i * 90} className="card stat">
               <p className="stat-num display">
                 <CountUp to={s.value} suffix={s.suffix} plain={s.plain} />
               </p>
@@ -371,6 +367,16 @@ function Projects() {
               className={`card proj pop ${p.featured && cat === 'All' ? 'proj-featured' : ''}`}
               style={{ '--d': `${i * 55}ms` } as React.CSSProperties}
             >
+              <div className="proj-shot">
+                {p.shot ? (
+                  <img src={p.shot} alt={`${p.title} landing page`} loading="lazy" />
+                ) : (
+                  <div className="shot-fallback" aria-hidden>
+                    <span>{p.title}</span>
+                    <small>{p.tags.slice(0, 3).join(' · ')}</small>
+                  </div>
+                )}
+              </div>
               <div className="proj-top">
                 {p.featured ? (
                   <p className="featured-tag"><span className="dot" /> Featured project</p>
@@ -410,6 +416,24 @@ function Projects() {
   )
 }
 
+const lucideLogos = { db: Database, api: Webhook, design: Network }
+
+function TechLogo({ t }: { t: Tech }) {
+  if (t.img) return <img className="logo" src={t.img} alt="" width={22} height={22} />
+  if (t.icon) {
+    // Near-black brand colours vanish on the dark theme, so they follow the text colour.
+    const [r, g, b] = [0, 2, 4].map((i) => parseInt(t.icon!.hex.slice(i, i + 2), 16))
+    const dark = 0.299 * r + 0.587 * g + 0.114 * b < 60
+    return (
+      <svg className="logo" viewBox="0 0 24 24" width={22} height={22} aria-hidden fill={dark ? 'currentColor' : `#${t.icon.hex}`}>
+        <path d={t.icon.path} />
+      </svg>
+    )
+  }
+  const L = lucideLogos[t.lucide ?? 'api']
+  return <L className="logo logo-lucide" size={22} aria-hidden />
+}
+
 function Skills() {
   return (
     <section id="skills" className="section">
@@ -424,9 +448,7 @@ function Skills() {
               <ul className="stack-items">
                 {row.items.map((i) => (
                   <li key={i.name} className={i.hot ? 'is-hot' : ''}>
-                    <span className="mono-badge" style={{ background: i.color }} aria-hidden>
-                      {i.name.slice(0, 1)}
-                    </span>
+                    <TechLogo t={i} />
                     {i.name}
                   </li>
                 ))}
@@ -515,13 +537,13 @@ export default function App() {
   useSpotlight()
   return (
     <>
-      <a href="#about" className="skip-link">Skip to content</a>
+      <a href="#projects" className="skip-link">Skip to content</a>
       <ScrollProgress />
       <Navbar theme={theme} toggle={toggle} />
       <main>
         <Hero />
         <Marquee />
-        <About />
+        <Stats />
         <Projects />
         <Skills />
         <Experience />

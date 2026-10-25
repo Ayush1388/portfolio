@@ -1,3 +1,10 @@
+import type { SimpleIcon } from 'simple-icons'
+import {
+  siApachekafka, siC, siCaddy, siCplusplus, siDocker, siElasticsearch, siEthers, siGit, siGithub,
+  siGo, siLinux, siNginx, siPostgresql, siPostman, siPython, siReact, siRedis, siSocketdotio,
+  siSolana, siTailwindcss,
+} from 'simple-icons'
+
 // Everything you'd want to edit lives here.
 export const profile = {
   name: 'Ayush Pandey',
@@ -12,7 +19,7 @@ export const profile = {
   resume: '/resume.pdf',
 }
 
-export const nav = ['Home', 'About', 'Projects', 'Skills', 'Experience', 'Contact']
+export const nav = ['Home', 'Projects', 'Skills', 'Experience', 'Contact']
 
 export type Category = 'Backend' | 'Full-stack' | 'Web3' | 'ML'
 
@@ -23,6 +30,7 @@ export type Project = {
   tags: string[]
   repo: string
   demo?: string
+  shot?: string
   featured?: boolean
 }
 
@@ -38,6 +46,7 @@ export const projects: Project[] = [
     tags: ['Go', 'PostgreSQL', 'Redis', 'WebSockets', 'Kafka', 'Elasticsearch', 'Docker'],
     repo: gh('auctionEngine'),
     demo: 'https://auctionengine-frontend.vercel.app',
+    shot: '/shots/auctionengine.jpg',
   },
   {
     title: 'Log Aggregator',
@@ -48,27 +57,13 @@ export const projects: Project[] = [
     repo: gh('log-aggregator'),
   },
   {
-    title: 'Snippetbox',
-    category: 'Backend',
-    blurb: 'A server-rendered Go web application for creating, storing and sharing code snippets.',
-    tags: ['Go'],
-    repo: gh('snippetbox'),
-  },
-  {
     title: 'InternHunt',
     category: 'Full-stack',
     blurb: 'A web platform to discover and track internship opportunities in one place.',
     tags: ['JavaScript'],
     repo: gh('InternHunt'),
     demo: 'https://internhunt-liart.vercel.app',
-  },
-  {
-    title: 'CivicMap',
-    category: 'Full-stack',
-    blurb: 'An interactive, map-based web app for exploring and reporting civic issues.',
-    tags: ['JavaScript'],
-    repo: gh('CIVICMAP'),
-    demo: 'https://civicmap.vercel.app',
+    shot: '/shots/internhunt.jpg',
   },
   {
     title: 'Food Delivery',
@@ -77,13 +72,7 @@ export const projects: Project[] = [
     tags: ['JavaScript'],
     repo: gh('Food_Delivery'),
     demo: 'https://food-delivery-hazel-alpha.vercel.app',
-  },
-  {
-    title: 'Spring',
-    category: 'Backend',
-    blurb: 'Exploring backend development with the Java Spring framework.',
-    tags: ['Java', 'Spring'],
-    repo: gh('spring'),
+    shot: '/shots/fooddelivery.jpg',
   },
   {
     title: 'HD Wallet',
@@ -101,95 +90,82 @@ export const projects: Project[] = [
     repo: gh('decentralizedFrellancingPlatform'),
   },
   {
-    title: 'Web3 Cohort',
-    category: 'Web3',
-    blurb: 'Hands-on projects and notes from learning blockchain and Web3 development.',
-    tags: ['JavaScript', 'Web3'],
-    repo: gh('web3cohort'),
-  },
-  {
     title: 'Fake News Detection',
     category: 'ML',
     blurb: 'A machine learning model that classifies news articles as real or fake.',
     tags: ['Python', 'ML', 'NLP'],
     repo: gh('fakeNewsDetection'),
   },
-  {
-    title: 'This Portfolio',
-    category: 'Full-stack',
-    blurb: 'The site you are looking at, built with React, TypeScript and Vite.',
-    tags: ['TypeScript', 'React', 'Vite'],
-    repo: gh('portfolio'),
-    demo: 'https://portfolio-six-bice-24.vercel.app',
-  },
 ]
 
 export const categories: ('All' | Category)[] = ['All', 'Backend', 'Full-stack', 'Web3', 'ML']
 
 export const stats = [
-  { value: projects.length, suffix: '+', label: 'Projects built' },
-  { value: projects.filter((p) => p.demo).length, suffix: '', label: 'Live deployments' },
+  { value: 12, suffix: '+', label: 'Projects built' },
+  { value: 5, suffix: '', label: 'Live deployments' },
   { value: 2, suffix: '+', label: 'Years building' },
   { value: 2028, suffix: '', label: 'Graduating', plain: true },
 ]
 
-export const stack: { group: string; items: { name: string; color: string; hot?: boolean }[] }[] = [
+export type Tech = { name: string; icon?: SimpleIcon; img?: string; lucide?: 'db' | 'api' | 'design'; hot?: boolean }
+
+export const stack: { group: string; items: Tech[] }[] = [
   {
     group: 'Languages',
     items: [
-      { name: 'Go', color: '#00ADD8', hot: true },
-      { name: 'SQL', color: '#64748b' },
-      { name: 'JavaScript', color: '#d4a800' },
-      { name: 'TypeScript', color: '#3178c6' },
-      { name: 'Python', color: '#3776ab' },
-      { name: 'Java', color: '#e76f00' },
+      { name: 'Go', icon: siGo, hot: true },
+      { name: 'C', icon: siC },
+      { name: 'C++', icon: siCplusplus },
+      { name: 'Python', icon: siPython },
+      { name: 'JavaScript', img: '/logos/javascript.svg' },
+      { name: 'TypeScript', img: '/logos/typescript.svg' },
+      { name: 'SQL', lucide: 'db' },
     ],
   },
   {
     group: 'Backend & Data',
     items: [
-      { name: 'PostgreSQL', color: '#336791' },
-      { name: 'Redis', color: '#dc382d' },
-      { name: 'Elasticsearch', color: '#f0a30a' },
-      { name: 'Kafka', color: '#555555' },
-      { name: 'Spring', color: '#6db33f' },
+      { name: 'PostgreSQL', icon: siPostgresql },
+      { name: 'Redis', icon: siRedis },
+      { name: 'Elasticsearch', icon: siElasticsearch },
+      { name: 'Kafka', icon: siApachekafka },
     ],
   },
   {
     group: 'Frontend & Web3',
     items: [
-      { name: 'React', color: '#149eca' },
-      { name: 'Tailwind', color: '#0ea5b7' },
-      { name: 'Ethers.js', color: '#5b5bd6' },
-      { name: 'Solana', color: '#9945ff' },
+      { name: 'React', icon: siReact },
+      { name: 'Tailwind', icon: siTailwindcss },
+      { name: 'Ethers.js', icon: siEthers },
+      { name: 'Solana', icon: siSolana },
     ],
   },
   {
     group: 'DevOps & Tools',
     items: [
-      { name: 'Docker', color: '#2496ed' },
-      { name: 'Linux', color: '#444444' },
-      { name: 'Nginx', color: '#009639' },
-      { name: 'Git', color: '#f05032' },
-      { name: 'GitHub', color: '#24292f' },
-      { name: 'Caddy', color: '#1f88c0' },
+      { name: 'Docker', icon: siDocker },
+      { name: 'Linux', icon: siLinux },
+      { name: 'Nginx', icon: siNginx },
+      { name: 'Git', icon: siGit },
+      { name: 'GitHub', icon: siGithub },
+      { name: 'Caddy', icon: siCaddy },
     ],
   },
   {
     group: 'Others',
     items: [
-      { name: 'REST APIs', color: '#2f80ed' },
-      { name: 'WebSockets', color: '#e8590c' },
-      { name: 'System Design', color: '#555555' },
-      { name: 'VS Code', color: '#007acc' },
-      { name: 'Postman', color: '#ff6c37' },
+      { name: 'REST APIs', lucide: 'api' },
+      { name: 'WebSockets', icon: siSocketdotio },
+      { name: 'System Design', lucide: 'design' },
+      { name: 'VS Code', img: '/logos/vscode.svg' },
+      { name: 'Postman', icon: siPostman },
     ],
   },
 ]
 
 export const marquee = [
-  'Go', 'PostgreSQL', 'Redis', 'Kafka', 'Elasticsearch', 'WebSockets', 'Docker',
-  'React', 'TypeScript', 'Python', 'Java', 'Ethers.js', 'Solana', 'Nginx', 'Linux',
+  'Go', 'Distributed Systems', 'PostgreSQL', 'Redis', 'Kafka', 'Elasticsearch', 'WebSockets', 'Docker',
+  'C', 'C++', 'React', 'TypeScript', 'Python', 'Ethers.js', 'Solana', 'Nginx', 'Linux',
 ]
 
 export const timeline = [
@@ -197,7 +173,7 @@ export const timeline = [
     title: 'B.Tech in Computer Science',
     place: 'SRM Institute of Science and Technology, Delhi NCR Campus',
     when: '2024 – 2028',
-    text: 'Studying computer science with a focus on backend systems, distributed architecture and scalable software.',
+    text: 'Studying computer science with a focus on distributed systems and scalable software.',
   },
   {
     title: 'Building Projects',
