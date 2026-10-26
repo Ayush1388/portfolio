@@ -53,7 +53,7 @@ const toTrack = (p: Project): Track => ({
   art: p.art ?? { hue: 22, lines: [] },
   links: [
     ...(p.demo ? [{ label: 'Live', href: p.demo }] : []),
-    { label: 'Code', href: p.repo },
+    ...(p.repo ? [{ label: 'Code', href: p.repo }] : []),
   ],
 })
 

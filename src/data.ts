@@ -28,7 +28,7 @@ export type Project = {
   category: Category
   blurb: string
   tags: string[]
-  repo: string
+  repo?: string
   demo?: string
   shot?: string
   featured?: boolean
@@ -94,22 +94,33 @@ export const projects: Project[] = [
     repo: gh('HDWallet'),
   },
   {
-    title: 'Decentralized Freelancing',
-    short: 'Freelance',
-    art: { hue: 150, lines: ['client  ──▶  escrow', 'escrow  ──▶  freelancer', 'on-chain · trustless', 'milestone.release()'] },
+    title: 'Blockchain Picture House',
+    short: 'PictureHouse',
     category: 'Web3',
-    blurb: 'A decentralized freelancing platform that connects clients and freelancers on-chain.',
-    tags: ['JavaScript', 'Web3'],
+    blurb: 'A decentralized freelancing platform: hire developers and pay in USDC. Funds sit in escrow and release when each milestone is approved.',
+    tags: ['Ethereum', 'USDC escrow', 'JavaScript'],
     repo: gh('decentralizedFrellancingPlatform'),
+    demo: 'https://decentralized-frellancing-platform.vercel.app',
+    shot: '/shots/freelancing.jpg',
   },
   {
-    title: 'Fake News Detection',
-    short: 'FakeNews',
-    art: { hue: 0, lines: ['P(real) = 0.12', 'P(fake) = 0.88', 'tf-idf → classifier', 'verdict: FAKE'] },
+    title: 'Vaultline',
+    short: 'Vaultline',
+    category: 'Web3',
+    blurb: 'Fractional ownership of real-world assets (real estate, art, vehicles and invoices) tokenized and settled on-chain.',
+    tags: ['Ethereum', 'RWA', 'Tokenization'],
+    demo: 'https://vaultline-rwa.vercel.app',
+    shot: '/shots/vaultline.jpg',
+  },
+  {
+    title: 'Rumour Desk',
+    short: 'RumourDesk',
     category: 'ML',
-    blurb: 'A machine learning model that classifies news articles as real or fake.',
-    tags: ['Python', 'ML', 'NLP'],
+    blurb: 'Checks whether a tweet looks like a true, false or unverified rumour from its text and how it spread, using a graph-enhanced stacked ensemble trained on Twitter15/16.',
+    tags: ['Python', 'ML', 'Graph features'],
     repo: gh('fakeNewsDetection'),
+    demo: 'https://rumour-desk.onrender.com',
+    shot: '/shots/rumourdesk.jpg',
   },
 ]
 
