@@ -35,8 +35,8 @@ const intro: Track = {
   short: 'Ayush',
   kicker: 'Software engineer',
   sub: "SRM IST · Class of '28",
-  blurb: 'B.Tech CS student fascinated by distributed systems. Building in Go since my second year.',
-  art: { hue: 22, lines: ['package main', '', 'func main() {', '  build(distributed.Systems)', '}'] },
+  blurb: 'B.Tech CS student building distributed systems and Web3 products. Shipping since my second year.',
+  art: { hue: 22, lines: ['package main', '', 'func main() {', '  build(distributed.Systems)', '  ship(web3.OnChain)', '}'] },
   links: [
     { label: 'About me', href: '#about' },
     { label: 'Resume', href: profile.resume },
@@ -477,7 +477,7 @@ function About() {
       <div className="wrap">
         <WordReveal
           className="statement"
-          text="I'm Ayush. I build distributed systems in Go, and the products that sit on top of them."
+          text="I'm Ayush. I build distributed systems in Go and Web3 products that settle on-chain."
         />
         <dl className="facts">
           {facts.map(([k, v], i) => (

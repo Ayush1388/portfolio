@@ -187,7 +187,7 @@ export const stack: { group: string; items: Tech[] }[] = [
 ]
 
 export const marquee = [
-  'Go', 'Distributed Systems', 'PostgreSQL', 'Redis', 'Kafka', 'Elasticsearch', 'WebSockets', 'Docker',
+  'Go', 'Distributed Systems', 'Web3', 'PostgreSQL', 'Redis', 'Kafka', 'Elasticsearch', 'WebSockets', 'Docker',
   'C', 'C++', 'React', 'TypeScript', 'Python', 'Ethers.js', 'Solana', 'Nginx', 'Linux',
 ]
 
@@ -196,7 +196,7 @@ export const timeline = [
     title: 'B.Tech in Computer Science',
     place: 'SRM Institute of Science and Technology, Delhi NCR Campus',
     when: '2024 – 2028',
-    text: 'Studying computer science with a focus on distributed systems and scalable software.',
+    text: 'Studying computer science with a focus on distributed systems, Web3 and scalable software.',
   },
   {
     title: 'Building Projects',
@@ -208,6 +208,6 @@ export const timeline = [
     title: 'Open Source & Learning',
     place: 'Self-directed',
     when: 'Ongoing',
-    text: 'Exploring distributed systems, system design and new technologies.',
+    text: 'Exploring distributed systems, Web3, system design and new technologies.',
   },
 ]
