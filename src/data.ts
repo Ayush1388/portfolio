@@ -84,6 +84,16 @@ export const projects: Project[] = [
     shot: '/shots/freelancing.jpg',
   },
   {
+    title: 'Rumour Desk',
+    short: 'RumourDesk',
+    category: 'ML',
+    blurb: 'Checks whether a tweet looks like a true, false or unverified rumour from its text and how it spread, using a graph-enhanced stacked ensemble trained on Twitter15/16.',
+    tags: ['Python', 'ML', 'Graph features'],
+    repo: gh('fakeNewsDetection'),
+    demo: 'https://rumour-desk.onrender.com',
+    shot: '/shots/rumourdesk.jpg',
+  },
+  {
     title: 'HD Wallet',
     short: 'Wallet',
     category: 'Web3',
@@ -93,16 +103,6 @@ export const projects: Project[] = [
     repo: gh('HDWallet'),
     demo: 'https://hd-wallet-yoet.vercel.app/',
     shot: '/shots/hdwallet.jpg',
-  },
-  {
-    title: 'Rumour Desk',
-    short: 'RumourDesk',
-    category: 'ML',
-    blurb: 'Checks whether a tweet looks like a true, false or unverified rumour from its text and how it spread, using a graph-enhanced stacked ensemble trained on Twitter15/16.',
-    tags: ['Python', 'ML', 'Graph features'],
-    repo: gh('fakeNewsDetection'),
-    demo: 'https://rumour-desk.onrender.com',
-    shot: '/shots/rumourdesk.jpg',
   },
   {
     title: 'InternHunt',

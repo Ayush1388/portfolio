@@ -168,7 +168,7 @@ function useMedia(query: string) {
 }
 
 /** Scroll distance (in viewport heights) that each track owns while the player is pinned. */
-const TRACK_VH = 0.5
+const TRACK_VH = 0.35
 
 /** Scroll the page to the middle of a track's slice of the pinned player. */
 function scrollToTrack(i: number) {
@@ -210,11 +210,49 @@ function Player({ index, setIndex }: { index: number; setIndex: (i: number) => v
       const i = Math.min(n - 1, Math.floor(p * n))
       if (i !== last.current) setIndex(i)
     }
+
+    // Directional settle: when a scroll gesture inside the player comes to rest, glide to the next
+    // project in the direction travelled, so one light notch moves exactly one project. The wheel is
+    // never blocked, and scrolling past the last project simply carries on down the page.
+    const center = (i: number) => {
+      const wrap = wrapRef.current!
+      return wrap.offsetTop + ((wrap.offsetHeight - window.innerHeight) / n) * (i + 0.5)
+    }
+    let settledY = window.scrollY
+    let timer = 0
+    const settle = () => {
+      const wrap = wrapRef.current
+      if (!wrap) return
+      const y = window.scrollY
+      const delta = y - settledY
+      const span = wrap.offsetHeight - window.innerHeight
+      const inPlayer = y >= wrap.offsetTop && y <= wrap.offsetTop + span
+      if (!inPlayer || Math.abs(delta) < 6) {
+        settledY = y
+        return
+      }
+      const fromIdx = Math.min(n - 1, Math.max(0, Math.floor(((settledY - wrap.offsetTop) / span) * n)))
+      const here = last.current
+      const target = here !== fromIdx ? here : here + Math.sign(delta)
+      if (target < 0 || target > n - 1) {
+        settledY = y
+        return
+      }
+      settledY = center(target)
+      window.scrollTo({ top: settledY, behavior: 'smooth' })
+    }
+    const onScroll = () => {
+      update()
+      clearTimeout(timer)
+      timer = window.setTimeout(settle, 140)
+    }
+
     update()
-    window.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('resize', update)
     return () => {
-      window.removeEventListener('scroll', update)
+      clearTimeout(timer)
+      window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', update)
     }
   }, [n, setIndex, isPhone])
@@ -262,7 +300,7 @@ function Player({ index, setIndex }: { index: number; setIndex: (i: number) => v
           if (!isPhone || !start) return
           const dx = e.changedTouches[0].clientX - start.x
           const dy = e.changedTouches[0].clientY - start.y
-          if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) go(dx < 0 ? 1 : -1)
+          if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy)) go(dx < 0 ? 1 : -1)
         }}
       >
         {index > 0 && <span className="ghost ghost-l" key={`gl-${prev.key}`} aria-hidden>{prev.short}</span>}
