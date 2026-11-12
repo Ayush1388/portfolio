@@ -105,14 +105,14 @@ export const projects: Project[] = [
     shot: '/shots/hdwallet.jpg',
   },
   {
-    title: 'InternHunt',
-    short: 'InternHunt',
+    title: 'Door Step',
+    short: 'DoorStep',
     category: 'Full-stack',
-    blurb: 'A web platform to discover and track internship opportunities in one place.',
-    tags: ['JavaScript'],
-    repo: gh('InternHunt'),
-    demo: 'https://internhunt-liart.vercel.app',
-    shot: '/shots/internhunt.jpg',
+    blurb:
+      'Every morning: startups that just raised or are hiring, matched to you, with a short email to the founder already written. You approve every one. On the web and in Telegram.',
+    tags: ['Web app', 'Telegram bot', 'JavaScript'],
+    demo: 'https://doorstep-jobs.vercel.app',
+    shot: '/shots/doorstep.jpg',
   },
   {
     title: 'Food Delivery',
